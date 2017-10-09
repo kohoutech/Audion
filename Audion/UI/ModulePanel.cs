@@ -37,7 +37,24 @@ namespace Audion.UI
         {
             panelType = "ModulePanel";
             name = modParam.name;
-            connType = (modParam.dir == ModuleJack.DIRECTION.IN) ? CONNECTIONTYPE.SOURCE : CONNECTIONTYPE.DEST;
+            connType = (modParam.dir == ModuleJack.DIRECTION.OUT) ? CONNECTIONTYPE.SOURCE : CONNECTIONTYPE.DEST;
+        }
+
+        public override Point ConnectionPoint
+        {
+            get
+            {
+                Point p = base.ConnectionPoint;
+                if (connType == CONNECTIONTYPE.SOURCE)
+                {
+                    p = new Point(frame.Right, frame.Top + frame.Height / 2);
+                }
+                if (connType == CONNECTIONTYPE.DEST)
+                {
+                    p = new Point(frame.Left, frame.Top + frame.Height / 2);
+                }
+                return p;
+            }
         }
 
         public override void paint(Graphics g)
@@ -45,7 +62,20 @@ namespace Audion.UI
             base.paint(g);
 
             //jack name
-            g.DrawString(name, SystemFonts.DefaultFont, Brushes.Black, frame.Location);
+            Font nameFont = SystemFonts.DefaultFont;
+            SizeF nameSize = g.MeasureString(name, nameFont);
+            int centerY = frame.Top + (frameHeight / 2);
+            int nameY = centerY - ((int)nameSize.Height / 2);
+            if (connType == CONNECTIONTYPE.SOURCE)
+            {
+                g.DrawLine(Pens.Black, frame.Right - 5, centerY, frame.Right, centerY);
+                g.DrawString(name, nameFont, Brushes.Black, frame.Right - nameSize.Width - 7, nameY);                
+            }
+            if (connType == CONNECTIONTYPE.DEST)
+            {
+                g.DrawLine(Pens.Black, frame.Left, centerY, frame.Left + 5, centerY);
+                g.DrawString(name, nameFont, Brushes.Black, frame.Left + 7, nameY);
+            }            
         }
     }
 }

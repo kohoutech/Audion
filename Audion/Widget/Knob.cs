@@ -1,6 +1,6 @@
 ﻿/* ----------------------------------------------------------------------------
-Audion : a audio plugin creator
-Copyright (C) 2011-2017  George E Greaney
+Transonic Widget Library
+Copyright (C) 1996-2017  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -21,26 +21,22 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Windows.Forms;
+using System.Drawing;
+using System.Drawing.Drawing2D;
 
-using Transonic.Patch;
-
-using Audion.Graph;
-
-namespace Audion.UI
+namespace Transonic.Widget
 {
-    public class ModuleBox : PatchBox
+    public class Knob : Control
     {
-        Module module;
 
-        public ModuleBox(Module _module) : base()
+        protected override void OnPaint(PaintEventArgs e)
         {
-            module = _module;
-            title = module.name;
-            foreach (ModuleJack jack in module.jacks)
-            {
-                ModulePanel panel = new ModulePanel(this, jack);
-                this.addPanel(panel, false);
-            }
+            base.OnPaint(e);
+            Graphics g = e.Graphics;
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+
+            g.DrawEllipse(Pens.Blue, 0, 0, 30, 30);
         }
     }
 }

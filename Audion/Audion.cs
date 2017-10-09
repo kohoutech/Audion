@@ -31,36 +31,84 @@ namespace Audion
     {
         public void initModuleMenu(AudionWindow window)
         {
-            Module osc = new Module("Oscillator");
-            osc.addJack(new ModuleJack("Freq", ModuleJack.DIRECTION.IN));
-            osc.addJack(new ModuleJack("Shape", ModuleJack.DIRECTION.IN));
-            osc.addJack(new ModuleJack("Out", ModuleJack.DIRECTION.OUT));
-            window.addModuleToMenu(osc);
+            //modules
+            window.addModuleToMenu("Oscillator");
+            window.addModuleToMenu("Filter");
+            window.addModuleToMenu("Env Gen");
+            window.addModuleToMenu("VCA");
+            window.addModuleToMenu("Audio Out");
 
-            Module filt = new Module("Filter");
-            filt.addJack(new ModuleJack("In", ModuleJack.DIRECTION.IN));
-            filt.addJack(new ModuleJack("Cutoff", ModuleJack.DIRECTION.IN));
-            filt.addJack(new ModuleJack("Resonance", ModuleJack.DIRECTION.IN));
-            filt.addJack(new ModuleJack("Out", ModuleJack.DIRECTION.OUT));
-            window.addModuleToMenu(filt);
-
-            Module adsr = new Module("Env Gen");
-            adsr.addJack(new ModuleJack("Attack", ModuleJack.DIRECTION.IN));
-            adsr.addJack(new ModuleJack("Decay", ModuleJack.DIRECTION.IN));
-            adsr.addJack(new ModuleJack("Sustain", ModuleJack.DIRECTION.IN));
-            adsr.addJack(new ModuleJack("Release", ModuleJack.DIRECTION.IN));
-            adsr.addJack(new ModuleJack("Out", ModuleJack.DIRECTION.OUT));
-            window.addModuleToMenu(adsr);
-
-            Module vca = new Module("VCA");
-            vca.addJack(new ModuleJack("In", ModuleJack.DIRECTION.IN));
-            vca.addJack(new ModuleJack("Amount", ModuleJack.DIRECTION.IN));
-            vca.addJack(new ModuleJack("Out", ModuleJack.DIRECTION.OUT));
-            window.addModuleToMenu(vca);
+            //controls
+            window.addModuleToMenu("Knob");
+            window.addModuleToMenu("List");
         }
 
-        public void addModuleToPatch(Module module)
+        public Module addModuleToPatch(String modName)
         {
+            Module mod = null;
+
+            switch (modName)
+            {
+                case "Oscillator":
+                    {
+                        mod = new Module("Oscillator");
+                        mod.addJack(new ModuleJack("Freq", ModuleJack.DIRECTION.IN));
+                        mod.addJack(new ModuleJack("Shape", ModuleJack.DIRECTION.IN));
+                        mod.addJack(new ModuleJack("Out", ModuleJack.DIRECTION.OUT));
+                        break;
+                    }
+                case "Filter":
+                    {
+                        mod = new Module("Filter");
+                        mod.addJack(new ModuleJack("In", ModuleJack.DIRECTION.IN));
+                        mod.addJack(new ModuleJack("Cutoff", ModuleJack.DIRECTION.IN));
+                        mod.addJack(new ModuleJack("Resonance", ModuleJack.DIRECTION.IN));
+                        mod.addJack(new ModuleJack("Out", ModuleJack.DIRECTION.OUT));
+                        break;
+                    }
+                case "Env Gen":
+                    {
+                        mod = new Module("Env Gen");
+                        mod.addJack(new ModuleJack("Attack", ModuleJack.DIRECTION.IN));
+                        mod.addJack(new ModuleJack("Decay", ModuleJack.DIRECTION.IN));
+                        mod.addJack(new ModuleJack("Sustain", ModuleJack.DIRECTION.IN));
+                        mod.addJack(new ModuleJack("Release", ModuleJack.DIRECTION.IN));
+                        mod.addJack(new ModuleJack("Out", ModuleJack.DIRECTION.OUT));
+                        break;
+                    }
+                case "VCA":
+                    {
+                        mod = new Module("VCA");
+                        mod.addJack(new ModuleJack("In", ModuleJack.DIRECTION.IN));
+                        mod.addJack(new ModuleJack("Amount", ModuleJack.DIRECTION.IN));
+                        mod.addJack(new ModuleJack("Out", ModuleJack.DIRECTION.OUT));
+                        break;
+                    }
+                case "Audio Out":
+                    {
+                        mod = new Module("Audio Out");
+                        mod.addJack(new ModuleJack("Left", ModuleJack.DIRECTION.IN));
+                        mod.addJack(new ModuleJack("Right", ModuleJack.DIRECTION.IN));
+                        break;
+                    }
+
+                //controls
+                case "Knob":
+                    {
+                        mod = new Module("Knob");
+                        mod.addJack(new ModuleJack("Out", ModuleJack.DIRECTION.OUT));
+                        break;
+                    }
+                case "List":
+                    {
+                        mod = new Module("List");
+                        mod.addJack(new ModuleJack("Out", ModuleJack.DIRECTION.OUT));
+                        break;
+                    }
+            }
+
+            return mod;
         }
+
     }
 }

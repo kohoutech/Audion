@@ -28,6 +28,7 @@ using System.Windows.Forms;
 
 using Transonic.MIDI.System;
 using Transonic.Patch;
+using Transonic.Widget;
 
 using Audion.Graph;
 using Audion.UI;
@@ -81,11 +82,11 @@ namespace Audion
 
 //- module menu ---------------------------------------------------------------
 
-        public void addModuleToMenu(Module module)
+        public void addModuleToMenu(String name)
         {
-            ToolStripItem inputItem = new ToolStripMenuItem(module.name);
+            ToolStripItem inputItem = new ToolStripMenuItem(name);
             inputItem.Click += new EventHandler(modSelectMenuItem_Click);
-            inputItem.Tag = module;
+            inputItem.Tag = name;
             modulesMenuItem.DropDownItems.Insert(modulesMenuItem.DropDownItems.Count, inputItem);
         }
 
@@ -93,11 +94,24 @@ namespace Audion
         private void modSelectMenuItem_Click(object sender, EventArgs e)
         {
             ToolStripItem item = (ToolStripItem)sender;
-            Module mod = (Module)item.Tag;                  //get module obj from menu item
+            String modName = (String)item.Tag;                  //get module name from menu item
 
-            audion.addModuleToPatch(mod);                   //add module to graph
-            ModuleBox box = new ModuleBox(mod);             //create new module box from unit
-            canvas.addPatchBox(box);                        //and add it to canvas
+
+            Module mod = audion.addModuleToPatch(modName);      //add module to graph
+            PatchBox box;
+            switch (modName)
+            {
+                case "Knob" :
+                    box = new KnobControl(mod);
+                    break;
+                case "List":
+                    box = new ListSelectControl(mod);
+                    break;
+                default:
+                    box = new ModuleBox(mod);                 //create new module box from unit
+                    break;
+            }
+            canvas.addPatchBox(box);                            //and add it to canvas
         }
 
 

@@ -22,25 +22,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-using Transonic.Patch;
-
-using Audion.Graph;
-
-namespace Audion.UI
+namespace Audion.Graph
 {
-    public class ModuleBox : PatchBox
+    public class ModControl
     {
-        Module module;
-
-        public ModuleBox(Module _module) : base()
-        {
-            module = _module;
-            title = module.name;
-            foreach (ModuleJack jack in module.jacks)
-            {
-                ModulePanel panel = new ModulePanel(this, jack);
-                this.addPanel(panel, false);
-            }
-        }
     }
 }

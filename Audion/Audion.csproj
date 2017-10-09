@@ -56,6 +56,7 @@
     <Compile Include="AudionWindow.Designer.cs">
       <DependentUpon>AudionWindow.cs</DependentUpon>
     </Compile>
+    <Compile Include="Graph\ModControl.cs" />
     <Compile Include="Graph\Module.cs" />
     <Compile Include="Graph\ModuleJack.cs" />
     <Compile Include="MIDI\Engine\MidiTimer.cs" />
@@ -79,10 +80,15 @@
     <Compile Include="Patch\PatchPanel.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="UI\KnobControl.cs" />
+    <Compile Include="UI\ListSelectControl.cs" />
     <Compile Include="UI\ModuleBox.cs" />
     <Compile Include="UI\ModulePanel.cs" />
     <Compile Include="Widget\KeyboardBar.cs">
       <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Widget\Knob.cs">
+      <SubType>Component</SubType>
     </Compile>
     <EmbeddedResource Include="AudionWindow.resx">
       <DependentUpon>AudionWindow.cs</DependentUpon>
