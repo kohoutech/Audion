@@ -1,6 +1,6 @@
 ﻿/* ----------------------------------------------------------------------------
-Audion : a audio plugin creator
-Copyright (C) 2011-2017  George E Greaney
+Transonic MIDI Library
+Copyright (C) 1995-2018  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -22,25 +22,26 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-using Transonic.Patch;
-
-using Audion.Breadboard;
-
-namespace Audion.UI
+namespace Transonic.MIDI
 {
-    public class ModuleBox : PatchBox
+    public class MarkerMap
     {
-        Module module;
+        public Sequence seq;
+        public List<Marker> markers;
+        public int count;
 
-        public ModuleBox(Module _module) : base()
+        public MarkerMap(Sequence _seq)
         {
-            module = _module;
-            title = module.name;
-            foreach (ModuleJack jack in module.jacks)
-            {
-                ModulePanel panel = new ModulePanel(this, jack);
-                this.addPanel(panel, false);
-            }
+            seq = _seq;
+            markers = new List<Marker>();
+            count = 0;
         }
     }
+
+//-----------------------------------------------------------------------------
+
+    public class Marker
+    {
+    }
+
 }

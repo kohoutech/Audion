@@ -1,6 +1,6 @@
 ﻿/* ----------------------------------------------------------------------------
 Audion : a audio plugin creator
-Copyright (C) 2011-2017  George E Greaney
+Copyright (C) 2011-2018  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -22,7 +22,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-using Audion.Graph;
+using Audion.Breadboard;
 using Audion.UI;
 
 namespace Audion

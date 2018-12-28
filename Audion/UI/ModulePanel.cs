@@ -24,7 +24,7 @@ using System.Text;
 using System.Drawing;
 
 using Transonic.Patch;
-using Audion.Graph;
+using Audion.Breadboard;
 
 namespace Audion.UI
 {

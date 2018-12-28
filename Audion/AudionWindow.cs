@@ -30,7 +30,7 @@ using Transonic.MIDI.System;
 using Transonic.Patch;
 using Transonic.Widget;
 
-using Audion.Graph;
+using Audion.Breadboard;
 using Audion.UI;
 
 namespace Audion

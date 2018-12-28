@@ -42,14 +42,11 @@ namespace Transonic.Wave.System
 
 //-----------------------------------------------------------------------------
 
-        Waverly waverly;
         public List<String> inputDeviceNames;
         public List<String> outputDeviceNames;
 
-        public WaveDevices(Waverly _waverly)
+        public WaveDevices()
         {
-            waverly = _waverly;
-
             //input devices
             int deviceID;
             uint incount = waveInGetNumDevs();

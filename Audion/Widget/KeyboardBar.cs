@@ -31,7 +31,10 @@ namespace Transonic.Widget
     {
         public enum Range {TWENTYFIVE = 0, THIRTYSEVEN, FORTYNINE, SIXTYONE, SEVENTYSIX, EIGHTYEIGHT, FULL }
         public enum KeySize { SMALL = 0, FULL };
-        public enum KeyMode { PLAYING = 0, SELECTING };
+        public enum KeyMode { 
+            PLAYING = 0,            //playing mode = mouse down/up send to parent window with key's midi num
+            SELECTING               //selecting mode = keys are just highlighted, used for defining a note mapping range
+        };
 
         public Color selectedColor = Color.Red;
 
@@ -41,7 +44,7 @@ namespace Transonic.Widget
         Key[] whitekeys;
         Key[] blackkeys;
         Rectangle keyframe;
-        Key mouseKey;
+        Key mouseKey;                   //key that the mouse has clicked over
         
         int keytop;
         int keyleft;
@@ -62,6 +65,7 @@ namespace Transonic.Widget
         int barwidth;
         int barheight;
         int keycount;
+
         Range range;
         KeySize size;
         KeyMode mode;
@@ -78,7 +82,9 @@ namespace Transonic.Widget
             mode = KeyMode.SELECTING;
             InitDimensions(range, size);
             InitializeComponent();
-            initKeyboard();            
+            initKeyboard();
+
+            mouseKey = null;
         }
 
         private void InitializeComponent()
@@ -92,12 +98,13 @@ namespace Transonic.Widget
             this.Name = "KeyboardBar";
             this.Size = new System.Drawing.Size(650, 200);
             this.ResumeLayout(false);
-
         }
 
 
 //- layout --------------------------------------------------------------------
 
+        //key counts = number of white/black keys depending on keyboard range
+        //key width/height = size of keys depending on keyboard size
         int[] whiteKeyCounts = { 15, 22, 29, 36, 45, 52, 75 };
         int[] whiteKeyWidths = {12,16};
         int[] whiteKeyHeights = {66,88};
@@ -105,9 +112,12 @@ namespace Transonic.Widget
         int[] blackKeyCounts = {10,15,20,25,31,36,53};
         int[] blackKeyWidths = {8,10};
         int[] blackKeyHeights = {41,55};
+
+        //white keys are all adjacent to each other, the blank keys are spaced apart
         int[,] blackKeyOffsets = new int[,] { { 8, 8, 8, 8, 19, 9}, { 10, 10, 10, 10, 25, 13 } };
         int[,] blackKeySpacings = new int[,] { { 13, 22, 13, 13, 23 }, { 18, 29, 18, 18, 29 } };
 
+        //number of octaves, lowest midi note in keyboard depending on keyboard range
         int[] octaveCounts = { 2, 3, 4, 5, 5, 7, 10 };
         int[] midiBases = { 48, 48, 36, 36, 28, 21, 0 };
         int midibase;
@@ -139,19 +149,20 @@ namespace Transonic.Widget
             keycount = whitekeycount + blackkeycount;
         }
 
-        void initKeyboard()
+        private void initKeyboard()
         {
+            //doesn't this depend on keyboard size?
             this.ClientSize = new System.Drawing.Size(10 + 576 + 10, 113);
             keyframe = new Rectangle(keyleft, keytop, keywidth, whitekeyheight);
 
             //midi keys
             keys = new Key[keycount];
-            midibase = midiBases[(int)range];
-            midimax = midibase + keycount - 1;
+            midibase = midiBases[(int)range];           //lowest midi note 
+            midimax = midibase + keycount - 1;          //highest midi note
             int midinum = midibase;
             for (int key = 0; key < keycount; key++)
             {
-                keys[key] = new Key(midinum++);
+                keys[key] = new Key(midinum++);         //set key's midi num
             }
 
             //key colors
@@ -259,6 +270,7 @@ namespace Transonic.Widget
 
 //- i/o -----------------------------------------------------------------------
 
+        //programmatically press & release key(s)
         public void setKeyDown(int midiNum)
         {
             if (midiNum >= midibase && midiNum <= midimax)
@@ -327,7 +339,8 @@ namespace Transonic.Widget
 
 //- mouse events --------------------------------------------------------------
 
-        public Key hitTest(Point p)
+        //press & release key(s) using the mouse
+        private Key hitTest(Point p)
         {
             Key result = null;
             if (keyframe.Contains(p))
@@ -364,15 +377,15 @@ namespace Transonic.Widget
         protected override void OnMouseDown(MouseEventArgs e)
         {
             base.OnMouseDown(e);
-            mouseKey = hitTest(e.Location);
-            if (mouseKey != null)
+            mouseKey = hitTest(e.Location);         
+            if (mouseKey != null)                   //if mouse has clicked on a key
             {
                 if (mode == KeyMode.PLAYING)
                 {
                     if (!mouseKey.sustain)
                     {
                         mouseKey.pressed = true;
-                        //auditWindow.auditorA.sendMidiMsg(0x90, mouseKey.midinum, 0x40);
+                        window.onKeyPress(mouseKey.midinum);                    //send press to parent window
                         mouseKey.sustain = (e.Button == MouseButtons.Right);
                         Invalidate();
                     }
@@ -385,7 +398,7 @@ namespace Transonic.Widget
                 //selecting
                 else
                 {
-                    allKeysUp();
+                    allKeysUp();                                //clicking on keyboard deselected prev range
                     mouseKey.pressed = !mouseKey.pressed;
                     dragstart = mouseKey.midinum;
                     Invalidate();
@@ -400,14 +413,14 @@ namespace Transonic.Widget
             if (mouseKey != null)
             {
                 Key newkey = hitTest(e.Location);
-                if (newkey != mouseKey)
+                if (newkey != mouseKey)                 //if dragged to another key
                 {
                     if (mode == KeyMode.PLAYING)
                     {
                         if (!mouseKey.sustain)
                         {
-                            mouseKey.pressed = false;
-                            //auditWindow.auditorA.sendMidiMsg(0x80, mouseKey.midinum, 0x0);
+                            mouseKey.pressed = false;                       //we've dragged off the prev key
+                            window.onKeyRelease(mouseKey.midinum);          //send release to parent window
                         }
                         mouseKey = newkey;
                         if (mouseKey != null)       //if dragged to another key
@@ -415,7 +428,7 @@ namespace Transonic.Widget
                             if (!mouseKey.sustain)
                             {
                                 mouseKey.pressed = true;
-                                //auditWindow.auditorA.sendMidiMsg(0x90, mouseKey.midinum, 0x40);
+                                window.onKeyPress(mouseKey.midinum);                    //send press to parent window
                                 mouseKey.sustain = (e.Button == MouseButtons.Right);
                             }
                             else
@@ -498,7 +511,7 @@ namespace Transonic.Widget
                     if (!mouseKey.sustain)
                     {
                         mouseKey.pressed = false;
-                        //auditWindow.auditorA.sendMidiMsg(0x80, mouseKey.midinum, 0x0);
+                        window.onKeyRelease(mouseKey.midinum);          //send release to parent window
                         Invalidate();
                     }
                     mouseKey = null;
@@ -520,6 +533,18 @@ namespace Transonic.Widget
             }
         }
 
+//- key events ----------------------------------------------------------------
+
+        //protected override void OnKeyDown(KeyEventArgs e)
+        //{
+        //    //if (e.KeyCode == Keys.Delete)
+        //}
+
+        //protected override void OnKeyUp(KeyEventArgs e)
+        //{
+        //    //if (e.KeyCode == Keys.Delete)
+        //}
+        
 //- painting ------------------------------------------------------------------
 
         protected override void OnPaint(PaintEventArgs e)
@@ -541,6 +566,7 @@ namespace Transonic.Widget
                 g.FillRectangle(Brushes.Black, blackkeys[i].shape);
                 g.FillRectangle(blackkeys[i].pressed ? selectedBrush : Brushes.Black, blackkeys[i].interior);
             }
+            selectedBrush.Dispose();
         }
     }
 
@@ -580,9 +606,9 @@ namespace Transonic.Widget
 
     public interface IKeyboardWindow
     {
-        void onKeyDown(int keyNumber);
+        void onKeyPress(int keyNumber);
 
-        void onKeyUp(int keyNumber);
+        void onKeyRelease(int keyNumber);
     }
 
 }

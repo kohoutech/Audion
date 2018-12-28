@@ -1,6 +1,6 @@
 ﻿/* ----------------------------------------------------------------------------
-Audion : a audio plugin creator
-Copyright (C) 2011-2017  George E Greaney
+Transonic MIDI Library
+Copyright (C) 1995-2018  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -22,9 +22,31 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Audion.Graph
+namespace Transonic.MIDI.System
 {
-    public class ModControl
+    public abstract class SystemUnit
     {
+        public String name;
+        public InputDevice inputDev;                    //connect from input device
+        public List<OutputDevice> outputDevList;        //connections to output devices
+
+        public SystemUnit(String _name)
+        {
+            name = _name;
+            inputDev = null;
+            outputDevList = new List<OutputDevice>();
+        }
+
+        //for connection to input devices
+        public virtual void receiveMessage(byte[] msg)
+        {
+        }
+
+        //for connection to output devices
+        public virtual void sendMessage(byte[] msg)
+        {
+        }
     }
 }
+
+//Console.WriteLine("there's no sun in the shadow of the wizard");

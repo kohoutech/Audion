@@ -24,65 +24,19 @@ using System.Text;
 using System.Runtime.InteropServices;
 
 using Transonic.Wave.System;
+using Transonic.Wave.Engine;
 
 namespace Transonic.Wave
 {
     public class Waverly
     {
-        //communication with wave.dll
+        //communication with waverly.dll
         [DllImport("Waverly.DLL", CallingConvention = CallingConvention.Cdecl)]
         public static extern void WaverlyInit();
 
         [DllImport("Waverly.DLL", CallingConvention = CallingConvention.Cdecl)]
         public static extern void WaverlyShutDown();
 
-//transport calls -----------------------------------------------------
-
-        [DllImport("Waverly.DLL", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void TransportPlay();
-
-        [DllImport("Waverly.DLL", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void TransportStop();
-
-        [DllImport("Waverly.DLL", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void TransportPause();
-
-        [DllImport("Waverly.DLL", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void TransportRewind();
-
-        [DllImport("Waverly.DLL", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void TransportFastForward(int speed);
-
-        [DllImport("Waverly.DLL", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void TransportRecord();
-
-        //[DllImport("Waverly.DLL", CallingConvention = CallingConvention.Cdecl)]
-        //public static extern void TransportSetVolume(float volume);
-
-        //[DllImport("Waverly.DLL", CallingConvention = CallingConvention.Cdecl)]
-        //public static extern void TransportSetBalance(float balance);
-
-        [DllImport("Waverly.DLL", CallingConvention = CallingConvention.Cdecl)]
-        public static extern float TransportSetLeftLevel(float level);
-
-        [DllImport("Waverly.DLL", CallingConvention = CallingConvention.Cdecl)]
-        public static extern float TransportSetRightLevel(float level);
-
-        [DllImport("Waverly.DLL", CallingConvention = CallingConvention.Cdecl)]
-        public static extern float TransportGetLeftLevel();
-
-        [DllImport("Waverly.DLL", CallingConvention = CallingConvention.Cdecl)]
-        public static extern float TransportGetRightLevel();
-
-        [DllImport("Waverly.DLL", CallingConvention = CallingConvention.Cdecl)]
-        public static extern int TransportGetCurrentPos();
-
-        [DllImport("Waverly.DLL", CallingConvention = CallingConvention.Cdecl)]
-        public static extern int TransportSetCurrentPos(int pos);
-
-        [DllImport("Waverly.DLL", CallingConvention = CallingConvention.Cdecl)]
-        public static extern void TransportSetWaveOut(int deviceIdx);
-        
 //audio data calls -------------------------------------------------------
 
         [DllImport("Waverly.DLL", CallingConvention = CallingConvention.Cdecl)]
@@ -161,73 +115,11 @@ namespace Transonic.Wave
             WaverlyShutDown();
         }
 
-//- transport methods ---------------------------------------------------------
-
-        public void playTransport()
+        public Transport getTransport()
         {
-            TransportPlay();
+            return new Transport();
         }
 
-        public void pauseTransport()
-        {
-            TransportPause();
-        }
-
-        public void stopTransport()
-        {
-            TransportStop();
-        }
-
-        public void rewindTransport()
-        {
-            TransportRewind();
-        }
-
-        public void fastForwardTransport(int speed)
-        {
-            //TransportFastForward(speed);      //doesn't work!
-        }
-
-        public void recordTransport()
-        {
-            TransportRecord();
-        }
-
-        public void setTransportLeftLevel(float level)
-        {
-            TransportSetLeftLevel(level);
-        }
-
-        public void setTransportRightLevel(float level)
-        {
-            TransportSetRightLevel(level);
-        }
-
-        public float getTransportLeftLevel()
-        {
-            return TransportGetLeftLevel();
-        }
-
-        public float getTransportRightLevel()
-        {
-            return TransportGetRightLevel();
-        }
-
-        public int getCurrentTransportPos()
-        {
-            return TransportGetCurrentPos();    //in samples
-        }
-
-        public void setCurrentTransportPos(int pos)
-        {
-            TransportSetCurrentPos(pos);		//in samples
-        }
-
-        public void setTransportOutDevice(int devIdx)
-        {
-            TransportSetWaveOut(devIdx);
-        }
-        
 //- audio data methods --------------------------------------------------------
 
         public void newAudioProject(int sampleRate, int duration)

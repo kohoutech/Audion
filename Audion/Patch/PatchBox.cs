@@ -1,6 +1,6 @@
 ﻿/* ----------------------------------------------------------------------------
 Transonic Patch Library
-Copyright (C) 1995-2017  George E Greaney
+Copyright (C) 1995-2018  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -53,7 +53,7 @@ namespace Transonic.Patch
         readonly Brush TITLECOLOR = Brushes.Black;
         readonly Font TITLEFONT = SystemFonts.DefaultFont;
         readonly int FRAMEWIDTH = 100;
-        readonly int NEWPANELBARHEIGHT = 0;
+        readonly int NEWPANELBARHEIGHT = 20;
 
         public PatchBox()
         {

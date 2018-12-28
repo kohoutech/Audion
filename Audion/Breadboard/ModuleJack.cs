@@ -1,6 +1,6 @@
 ﻿/* ----------------------------------------------------------------------------
 Audion : a audio plugin creator
-Copyright (C) 2011-2017  George E Greaney
+Copyright (C) 2011-2018  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -22,25 +22,23 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-using Transonic.Patch;
-
-using Audion.Breadboard;
-
-namespace Audion.UI
+namespace Audion.Breadboard
 {
-    public class ModuleBox : PatchBox
+    public class ModuleJack
     {
-        Module module;
-
-        public ModuleBox(Module _module) : base()
+        public enum DIRECTION
         {
-            module = _module;
-            title = module.name;
-            foreach (ModuleJack jack in module.jacks)
-            {
-                ModulePanel panel = new ModulePanel(this, jack);
-                this.addPanel(panel, false);
-            }
+            IN,
+            OUT
+        }
+
+        public String name;
+        public DIRECTION dir;
+
+        public ModuleJack(String _name, DIRECTION _dir)
+        {
+            name = _name;
+            dir = _dir;
         }
     }
 }

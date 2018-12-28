@@ -56,19 +56,24 @@
     <Compile Include="AudionWindow.Designer.cs">
       <DependentUpon>AudionWindow.cs</DependentUpon>
     </Compile>
-    <Compile Include="Graph\ModControl.cs" />
-    <Compile Include="Graph\Module.cs" />
-    <Compile Include="Graph\ModuleJack.cs" />
+    <Compile Include="Bench\Compiler.cs" />
+    <Compile Include="Fast\Scanner.cs" />
+    <Compile Include="Breadboard\ModControl.cs" />
+    <Compile Include="Breadboard\Module.cs" />
+    <Compile Include="Breadboard\ModuleJack.cs" />
     <Compile Include="MIDI\Engine\MidiTimer.cs" />
     <Compile Include="MIDI\Engine\Transport.cs" />
     <Compile Include="MIDI\Event.cs" />
+    <Compile Include="MIDI\MarkerMap.cs" />
     <Compile Include="MIDI\Message.cs" />
+    <Compile Include="MIDI\MeterMap.cs" />
     <Compile Include="MIDI\MidiFile.cs" />
     <Compile Include="MIDI\Sequence.cs" />
     <Compile Include="MIDI\System\InputDevice.cs" />
     <Compile Include="MIDI\System\MidiSystem.cs" />
     <Compile Include="MIDI\System\OutputDevice.cs" />
     <Compile Include="MIDI\System\SystemUnit.cs" />
+    <Compile Include="MIDI\TempoMap.cs" />
     <Compile Include="MIDI\Track.cs" />
     <Compile Include="Patch\iPatchConnector.cs" />
     <Compile Include="Patch\IPatchView.cs" />
@@ -108,7 +113,6 @@
     <EmbeddedResource Include="Widget\KeyboardBar.resx">
       <DependentUpon>KeyboardBar.cs</DependentUpon>
     </EmbeddedResource>
-    <None Include="MIDI\README.md" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -118,11 +122,10 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
-    <None Include="Wave\README.md" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Dialogs\" />
-    <Folder Include="Fast\" />
+    <Folder Include="Wave\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Resources\Icon1.ico" />

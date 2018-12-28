@@ -1,6 +1,6 @@
 ﻿/* ----------------------------------------------------------------------------
-Audion : a audio plugin creator
-Copyright (C) 2011-2017  George E Greaney
+LibTransWave : a library for playing, editing and storing audio wave data
+Copyright (C) 2005-2017  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -22,23 +22,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Audion.Graph
+namespace Transonic.Wave.Engine
 {
-    public class ModuleJack
+    public class Channel
     {
-        public enum DIRECTION
-        {
-            IN,
-            OUT
-        }
-
-        public String name;
-        public DIRECTION dir;
-
-        public ModuleJack(String _name, DIRECTION _dir)
-        {
-            name = _name;
-            dir = _dir;
-        }
     }
 }
