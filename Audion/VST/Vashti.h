@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
-LibTransWave : a library for playing, editing and storing audio wave data
-Copyright (C) 2005-2017  George E Greaney
+Transonic VST Library
+Copyright (C) 2005-2019  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -17,30 +17,36 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 ----------------------------------------------------------------------------*/
 
-#if !defined(AUDIOFILE_H)
-#define AUDIOFILE
+#if !defined(Vashti_H)
+#define Vashti_H
 
-#include "..\Engine\AudioData.h"
 #include <windows.h>
 #include <mmsystem.h>
 #include <stdio.h>
 
-class Waverly;
-class Transport;
+#include "VSTPlugin.h"
+#include "VSTHost.h"
 
-class AudioFile : public AudioData
+class WaveOutDevice;
+
+class Vashti
 {
 public:
-	AudioFile(Waverly* AWaverly, char* filename);
-	~AudioFile();
+	Vashti();
+	~Vashti();
 
-	void getchannelData(int channelNum, float* dataBuf, int dataPos, int dataSize);
+	static Vashti* vashtiB;		//for front end communication
 
-protected:
+	VSTHost* vstHost;
 
-	float* tracks[2];
-	int importTracksFromWavFile(char* filename);
+	//host
+	void setPlugAudioIn(int vstnum, int idx);
+	void setPlugAudioOut(int vstnum, int idx);
 
+	//plugin 
+	char* getProgramName(int vstNum, int paramnum);
+	void setProgram(int vstNum, int prognum);
 };
 
-#endif // AUDIOFILE
+#endif // Vashti_H
+

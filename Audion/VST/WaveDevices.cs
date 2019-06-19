@@ -1,6 +1,6 @@
 ﻿/* ----------------------------------------------------------------------------
-LibTransWave : a library for playing, editing and storing audio wave data
-Copyright (C) 2005-2017  George E Greaney
+Transonic VST Library
+Copyright (C) 2005-2019  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -17,13 +17,15 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 ----------------------------------------------------------------------------*/
 
+//copied from the Transonic LibTransWave library
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Runtime.InteropServices;
 
-namespace Transonic.Wave.System
+namespace Transonic.VST
 {
     public class WaveDevices
     {
@@ -142,3 +144,4 @@ namespace Transonic.Wave.System
         WAVERR_UNPREPARED = 34
     }
 }
+

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
-LibTransWave : a library for playing, editing and storing audio wave data
-Copyright (C) 2005-2017  George E Greaney
+Transonic VST Library
+Copyright (C) 2005-2019  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,56 +24,48 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #include <mmsystem.h>
 #include <stdio.h>
 
-class Waverly;
-class WaveBuffer;
+#include "WaveBuffer.h"
 
 class WaveOutDevice
 {
 public:
-	WaveOutDevice(Waverly *_waverly);
+	WaveOutDevice();
 	virtual ~WaveOutDevice();
 
 //basic operations
 	BOOL open(int devID, DWORD sampleRate = 44100, WORD bitDepth = 16, WORD channels = 2);
 	BOOL start();
+	void writeOut(float **outData, int size);
 	BOOL pause();
 	BOOL stop();
 	BOOL close();
-	void writeOut(float **outData, int size);
 
 //currently opened wave device attributes
     BOOL isDevOpen() { return isOpen; }
 
-	//audio data params
     int getSampleRate()      { return (isOpen) ? (int)wf.nSamplesPerSec : 0; }
-    int getSampleSize()		 { return (isOpen) ? (int)wf.wBitsPerSample : 0; }
+    int getBitDepth()		 { return (isOpen) ? (int)wf.wBitsPerSample : 0; }
     int getChannelCount()    { return (isOpen) ? (int)wf.nChannels : 0; }
     int getBytesPerSecond()  { return (isOpen) ? (int)wf.nAvgBytesPerSec : 0; }
     int getBlockAlignment()  { return (isOpen) ? (int)wf.nBlockAlign : 0; }
 
 //buffer mgmt
-
-	//maximum amount of data we can send to <writeOut> at any one time is bufferCount * bufferDuration
-	//if we send more than this, we'll get a overrun condition, and need to increase num of buffers
 	int getBufferCount() { return bufferCount; }
 	void setBufferCount(int count) { bufferCount = count;}
 
-	int getBufferDuration() {return bufferDuration; }		//buffer length in msec
+	int getBufferDuration() {return bufferDuration; }
 	void setBufferDuration(int duration);
 
 protected:
-	Waverly *waverly;		//for reporting status to controller
-	char* devName;
-	BOOL isOpen;			//device status (opened/closed)
-    HWAVEOUT hDev;			//device handle for making func calls
-	WAVEFORMATEX wf;		//format of audio data we'll be sending to device
-	BOOL isPlaying;			//are we currently sending the device audio data?
+	BOOL isOpen;
+    HWAVEOUT hDev;                      
+	WAVEFORMATEX wf;
+	BOOL isPlaying;
 
-	//output buffers
-	WaveBuffer **buffers;		//the buffer array we pass data to the device with
-	int bufferCount;
-	int bufferDuration;			//buf size in msec - we set buf size with this
-	int bufferSize;				//buf size in bytes - depends on sample rate, sample size & channel count
+	WaveBuffer **buffers;
+	int bufferSize;
+	int bufferCount;				
+	int bufferDuration;				//buf duration in ms
 
 	void allocateBuffers();
 	void freeBuffers();

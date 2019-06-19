@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
-LibTransWave : a library for playing, editing and storing audio wave data
-Copyright (C) 2005-2017  George E Greaney
+Transonic VST Library
+Copyright (C) 2005-2019  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -57,7 +57,7 @@ DWORD WaveBuffer::Length()
 	if (!waveHdr)                             
 		return 0;                           
 	if (isRecording)  
-		return waveHdr->dwBytesRecorded;		//if recording, length = num of bytes recorded to buf
+		return waveHdr->dwBytesRecorded;			//if recording, length = num of bytes recorded to buf
 	else                                    
-		return waveHdr->dwBufferLength;			//if playing, then length = the whole buffer (we fill it up)
+		return waveHdr->dwBufferLength;				//if playing, then length = the whole buffer (we fill it up)
 }

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
-LibTransWave : a library for playing, editing and storing audio wave data
-Copyright (C) 2005-2017  George E Greaney
+Transonic VST Library
+Copyright (C) 2005-2019  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -17,9 +17,8 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 ----------------------------------------------------------------------------*/
 
-#include "WaveOutDevice.h"
-#include "..\Waverly.h"
 #include "WaveBuffer.h"
+#include "WaveOutDevice.h"
 #include <math.h>
 
 //default vals - gives 1 sec w/o buffer overrun, should be enough
@@ -27,10 +26,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 #define WAVEOUTBUFDURATION   100		//buf duration in ms
 
 //cons
-WaveOutDevice::WaveOutDevice(Waverly *_waverly)
+WaveOutDevice::WaveOutDevice()
 {
-	waverly = _waverly;
-	devName = NULL;
 	hDev = NULL;		//device closed
 	isOpen = FALSE;
 
@@ -43,10 +40,10 @@ WaveOutDevice::WaveOutDevice(Waverly *_waverly)
 	wf.nAvgBytesPerSec = wf.nSamplesPerSec * wf.nBlockAlign;		//blocks / sec in bytes
 	wf.cbSize = 0;													//no extra data
 
-	//no buffers allocated yet, we set the buf count & buf len
+	//no buffers allocated yet
 	bufferDuration = WAVEOUTBUFDURATION;
-	bufferCount = WAVEOUTBUFCOUNT;
 	bufferSize = (int)(wf.nSamplesPerSec * (bufferDuration / 1000.0f) + 1.0f) * wf.nBlockAlign;
+	bufferCount = WAVEOUTBUFCOUNT;
 	buffers = NULL;
 
 	isPlaying = FALSE;
@@ -105,29 +102,26 @@ void WaveOutDevice::setBufferDuration(int duration)
 
 //open device with optional sample rate, sample size & channel count
 //if opened, sets callback & allocates the buffers
-BOOL WaveOutDevice::open(int devID, DWORD sampleRate, WORD sampleSize, WORD channels)
+BOOL WaveOutDevice::open(int devID, DWORD sampleRate, WORD bitDepth, WORD channels)
 {
-	if (hDev != NULL)			//if already open
+	if (hDev != NULL) 
 		close();
 
 	//update wave out format
 	wf.nChannels = channels;
 	wf.nSamplesPerSec = sampleRate;
-	wf.wBitsPerSample = sampleSize;	
-	wf.nBlockAlign = channels * sampleSize / 8;
-	wf.nAvgBytesPerSec = sampleRate * channels * sampleSize / 8;
+	wf.nAvgBytesPerSec = sampleRate * channels * bitDepth / 8;
+	wf.nBlockAlign = channels * bitDepth / 8;
+	wf.wBitsPerSample = bitDepth;	
 
 	//open it
-	//devID = device id, wf = format of data we're passing to it, 
-	//waveoutproc = callback when it needs more data, using CALLBACK_FUNCTION (instead of window, thread or event)
-	//this = ref to self returned in callback, so the callback can call funcs on self
-	//we get back a handle to open device if no err
 	WORD result = waveOutOpen(&hDev, devID, &wf, (DWORD)WaveOutProc, (DWORD)this, CALLBACK_FUNCTION);
 
 	//check for error
 	if (result)
 	{
-		waverly->reportStatus(devName, "could not open device for output");
+		//WCHAR errMsg[256];
+		//waveOutGetErrorText(result, errMsg, sizeof(errMsg));
 		hDev = NULL;                         
 		return FALSE;
 	}
@@ -203,16 +197,15 @@ void WaveOutDevice::writeOut(float **outData, int length)
 	//keep filling output buffers until at end of data
 	while (length > 0)
 	{
-		int sampleCount = (length <= nBufLen) ? length : nBufLen;	//num of samples to fill for this buffer
+		int blockCount = (length <= nBufLen) ? length : nBufLen;
 
-		//get free output buffer & mark it being used 
+		//get free output buffer
 		int i;
 		for (i = 0; i < bufferCount; i++)
 			if (!buffers[i]->isInUse())
 				break;
-		if (i >= bufferCount)		//if no free buffers, we have overrun condition
+		if (i >= bufferCount)                   
 		{
-			waverly->reportStatus(devName, "buffer overrun during playback");
 			return;                             
 		}
 		WaveBuffer* buf = buffers[i];
@@ -220,7 +213,7 @@ void WaveOutDevice::writeOut(float **outData, int length)
 
 		//store multi channel floating point data into interleaved integer data
 		int bytesPerSample = wf.wBitsPerSample / 8;
-		for (int sampNum = 0; sampNum < sampleCount; sampNum++)            
+		for (int sampNum = 0; sampNum < blockCount; sampNum++)            
 		{
 			for (int chanNum = 0; chanNum < wf.nChannels; chanNum++)         
 			{
@@ -243,22 +236,22 @@ void WaveOutDevice::writeOut(float **outData, int length)
 			}
 		}
 
-		DWORD bcount = sampleCount * wf.nBlockAlign;		//number of data bytes in output buffer
-		buf->waveHdr->dwBufferLength = bcount;				//set size of data in wavehdr to be played
+		DWORD bcount = blockCount * wf.nBlockAlign;
+		buf->waveHdr->dwBufferLength = bcount;
 		buf->waveHdr->dwBytesRecorded = bcount;
 
 		//write buffer to output device
 		waveOutWrite(hDev, buf->waveHdr, sizeof(WAVEHDR));
 
 		//goto next buffer's worth of output data
-		outPos += sampleCount;
-		length -= sampleCount;
+		outPos += blockCount;
+		length -= blockCount;
 	}
 }
 
 //-----------------------------------------------------------------------------
 
-// callback procedure - called when device driver has played a buffer, we return it to the free buffer list
+// callback procedure - called when device driver has played a buffer
 void CALLBACK WaveOutDevice::WaveOutProc(HMIDIOUT hWaveOut,	UINT wMsg, DWORD dwInstance, DWORD dwParam1, DWORD dwParam2)
 {
 	switch (wMsg)
@@ -269,9 +262,10 @@ void CALLBACK WaveOutDevice::WaveOutProc(HMIDIOUT hWaveOut,	UINT wMsg, DWORD dwI
 
 	case WOM_DONE : 
 		LPWAVEHDR lphdr = (LPWAVEHDR)dwParam1;
-		WaveBuffer* wb = (WaveBuffer *) lphdr->dwUser;		//we get the WaveBuffer obj from wavehdr's dwUser field
-		wb->setInUse(FALSE);								//mark WaveBuffer as free to reuse
+		WaveBuffer* wb = (WaveBuffer *) lphdr->dwUser;
+		wb->setInUse(FALSE);
 		break;
+
 	}
 }
 

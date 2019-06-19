@@ -15,48 +15,36 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Waverly.cpp">
+    <ClCompile Include="Vashti.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Transport.cpp">
+    <ClCompile Include="VSTPlugin.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="System\WaveOutDevice.cpp">
+    <ClCompile Include="VSTHost.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="System\WaveBuffer.cpp">
+    <ClCompile Include="WaveBuffer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="System\WaveInDevice.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="File\AudioFile.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\AudioData.cpp">
+    <ClCompile Include="WaveOutDevice.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Waverly.h">
+    <ClInclude Include="Vashti.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Audio\WaveBuffer.h">
+    <ClInclude Include="VSTPlugin.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Transport.h">
+    <ClInclude Include="VSTHost.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="System\WaveOutDevice.h">
+    <ClInclude Include="WaveBuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="System\WaveInDevice.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="File\AudioFile.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\AudioData.h">
+    <ClInclude Include="WaveOutDevice.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
