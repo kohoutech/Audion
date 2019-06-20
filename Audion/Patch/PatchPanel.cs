@@ -1,6 +1,6 @@
 ﻿/* ----------------------------------------------------------------------------
 Transonic Patch Library
-Copyright (C) 1995-2018  George E Greaney
+Copyright (C) 1995-2019  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -35,41 +35,38 @@ namespace Transonic.Patch
             NEITHER
         }
 
-        public String panelType;
-        public static int panelCount = 0;
-        public int panelNum;
+        public String panelName;
 
         public PatchBox patchbox;
-        public List<PatchLine> connectors;
+        public List<PatchWire> wires;
         public CONNECTIONTYPE connType;
 
         public Rectangle frame;
         public int frameWidth;
         public int frameHeight;
 
-        public PatchPanel(PatchBox box)
+        public PatchPanel(PatchBox box, String _panelName)
         {
-            panelType = "PatchPanel";
-            panelNum = ++panelCount;
             patchbox = box;
+            panelName = _panelName;
 
-            updateFrame(20, patchbox.frame.Width);
+            updateFrame(patchbox.frame.Width, 20);      //default frame size
 
-            connectors = new List<PatchLine>();
+            wires = new List<PatchWire>();
             connType = CONNECTIONTYPE.NEITHER;
         }
 
-        public void updateFrame(int height, int width)
+        public void updateFrame(int width, int height)
         {
-            frameHeight = height;
             frameWidth = width;
+            frameHeight = height;
             frame = new Rectangle(0, 0, frameWidth, frameHeight);
         }
 
         public virtual void setPos(int xOfs, int yOfs)
         {
             frame.Offset(xOfs, yOfs);
-            foreach(PatchLine connector in connectors)
+            foreach(PatchWire connector in wires)
             {
                 if (connType == CONNECTIONTYPE.SOURCE)
                 {
@@ -105,30 +102,19 @@ namespace Transonic.Patch
             get { return new Point(frame.Left + frame.Width / 2, frame.Top + frame.Height / 2); }
         }
 
-        public virtual void connectLine(PatchLine line)
+        public virtual void connectLine(PatchWire line)
         {
-            connectors.Add(line);
+            wires.Add(line);
         }
 
-        public virtual void disconnectLine(PatchLine line)
+        public virtual void disconnectLine(PatchWire line)
         {
-            connectors.Remove(line);                
+            wires.Remove(line);                
         }
 
         public bool isConnected()
         {
-            return (connectors.Count != 0);
-        }
-
-        //called on source panel when a patch line connects two panels, so matching connection can be made in the backing model
-        public virtual iPatchConnector makeConnection(PatchPanel destPanel)
-        {
-            return null;
-        }
-
-        //called on source panel when two panels are disconnected, so matching connection can be ended in the backing model
-        public virtual void breakConnection(PatchPanel destPanel)
-        {
+            return (wires.Count != 0);
         }
 
 //- user input ----------------------------------------------------------------
@@ -168,61 +154,8 @@ namespace Transonic.Patch
         {
             g.DrawRectangle(Pens.Black, frame);
         }
-
-//- persistance ---------------------------------------------------------------
-
-        static Dictionary<String, PatchPanelLoader> panelTypeList = new Dictionary<String, PatchPanelLoader>();
-
-        public static void registerPanelType(String panelName, PatchPanelLoader loader)
-        {
-            panelTypeList.Add(panelName, loader);
-        }
-
-        //loading
-        public static PatchPanel loadFromXML(PatchBox box, XmlNode panelNode)
-        {
-            PatchPanel panel = null;
-            String panelName = panelNode.Attributes["paneltype"].Value;
-            PatchPanelLoader loader = panelTypeList[panelName];
-            if (loader != null)
-            {
-                panel = loader.loadFromXML(box, panelNode);
-            }
-            return panel;
-        }
-
-        public virtual void loadAttributesFromXML(XmlNode panelNode)
-        {
-            panelNum = Convert.ToInt32(panelNode.Attributes["number"].Value);            
-        }
-        
-        //saving
-        public void saveToXML(XmlWriter xmlWriter)
-        {
-            xmlWriter.WriteStartElement("panel");
-            saveAttributesToXML(xmlWriter);
-            xmlWriter.WriteEndElement();
-        }
-
-        public virtual void saveAttributesToXML(XmlWriter xmlWriter)
-        {
-            xmlWriter.WriteAttributeString("paneltype", panelType);
-            xmlWriter.WriteAttributeString("number", panelNum.ToString());            
-        }
     }
 
-//- panel loader class --------------------------------------------------------
-
-    //subclassed by descendants so correct class will be loaded from XML file
-    public class PatchPanelLoader
-    {
-        public virtual PatchPanel loadFromXML(PatchBox box, XmlNode panelNode)
-        {
-            PatchPanel panel = new PatchPanel(box);
-            panel.loadAttributesFromXML(panelNode);
-            return panel;
-        }
-    }
 }
 
 //Console.WriteLine("there's no sun in the shadow of the Wizard");

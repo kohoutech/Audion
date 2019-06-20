@@ -1,6 +1,6 @@
 ﻿/* ----------------------------------------------------------------------------
 Transonic Patch Library
-Copyright (C) 1995-2018  George E Greaney
+Copyright (C) 1995-2019  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -23,20 +23,23 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using System.Drawing;
-using System.Xml;
-using System.Xml.Serialization;
 using System.Drawing.Drawing2D;
+
+using Origami.ENAML;
 
 namespace Transonic.Patch
 {
     public class PatchCanvas : Control
     {
-        public IPatchView patchwin;         //the window that holds this canvas
+        public IPatchModel patchModel;         //the canvas' backing model
+        public PatchPalette palette;
+
         List<PatchBox> boxList;             //the boxes on the canvas
-        List<PatchLine> lineList;           //the connector lines on the canvas
+        List<PatchWire> wireList;           //the wires on the canvas
+        List<Object> zList;                 //z-order for painting boxes & wires
 
         PatchBox selectedBox;           //currently selected box
-        PatchLine selectedLine;         //currently select line
+        PatchWire selectedWire;         //currently select wire
 
         Point newBoxOrg;                //point on canvas where first new box is placed
         Point newBoxOfs;                //offset of next new box is placed
@@ -47,8 +50,8 @@ namespace Transonic.Patch
         Point dragOfs;
 
         bool connecting;
-        Point connectLineStart;
-        Point connectLineEnd;
+        Point connectWireStart;
+        Point connectWireEnd;
         PatchPanel sourcePanel;
         PatchPanel targetPanel;
 
@@ -56,21 +59,29 @@ namespace Transonic.Patch
         PatchPanel trackingPanel;
 
         //cons
-        public PatchCanvas(IPatchView _patchwin)
+        public PatchCanvas(IPatchModel _patchwin)
         {
-            patchwin = _patchwin;
-            boxList = new List<PatchBox>();
-            lineList = new List<PatchLine>();
+            patchModel = _patchwin;
 
-            newBoxOrg = new Point(50, 50);
+            palette = new PatchPalette(this);
+            palette.Location = new Point(this.ClientRectangle.Left, this.ClientRectangle.Top);
+            palette.Size = new Size(palette.Width, this.ClientRectangle.Height);
+            this.Controls.Add(palette);
+
+            this.BackColor = Color.White;
+            this.DoubleBuffered = true;
+
+            boxList = new List<PatchBox>();
+            wireList = new List<PatchWire>();
+            zList = new List<object>();
+
+            newBoxOrg = new Point(palette.Width + 50, 50);
             newBoxOfs = new Point(20, 20);
             newBoxPos = new Point(newBoxOrg.X, newBoxOrg.Y);
 
-            this.BackColor = Color.FromArgb(0xFF, 0x75, 0x00);
-            this.DoubleBuffered = true;
-
+            //init canvas state
             selectedBox = null;             //selecting
-            selectedLine = null;
+            selectedWire = null;
             dragging = false;               //dragging
             connecting = false;             //connecting
             sourcePanel = null;
@@ -79,132 +90,120 @@ namespace Transonic.Patch
             trackingPanel = null;
         }
 
-//- patch management ----------------------------------------------------------
+        protected override void OnResize(EventArgs e)
+        {
+            base.OnResize(e);
+            if (palette != null)
+            {
+                palette.Size = new Size(palette.Width, this.ClientRectangle.Height);
+            }
+        }
+
+        //- palette management ----------------------------------------------------------
+
+        public void openPalette(bool isOpen)
+        {
+            if (isOpen)
+            {
+                palette.Location = new Point(this.ClientRectangle.Left, this.ClientRectangle.Top);
+            }
+            else
+            {
+                palette.Location = new Point(this.ClientRectangle.Left - palette.Width + palette.buttonWidth, this.ClientRectangle.Top);
+            }
+            this.Invalidate();          //redraw palette border
+        }
+
+        public void setPaletteColor(Color color)
+        {
+            palette.BackColor = color;
+            palette.Invalidate();
+        }
+
+        public void setPaletteItems(List<PaletteItem> items)
+        {
+            palette.setItems(items);
+        }
+
+        public void enablePaletteItem(PaletteItem item)
+        {
+            item.enabled = true;
+            palette.enableItem(item);
+        }
+
+        public void disablePaletteItem(PaletteItem item)
+        {
+            item.enabled = false;
+            palette.enableItem(item);
+        }
+
+        public void handlePaletteItemDoubleClick(PaletteItem item)
+        {
+            PatchBox newBox = patchModel.getPatchBox(item);
+            addPatchBox(newBox);
+        }
+
+        //- patch management ----------------------------------------------------------
 
         public void clearPatch()
         {
             //connections
-            List<PatchLine> dellineList = new List<PatchLine>(lineList);
-            foreach (PatchLine line in dellineList)
+            List<PatchWire> delWireList = new List<PatchWire>(wireList);
+            foreach (PatchWire wire in delWireList)
             {
-                removePatchLine(line);
+                removePatchWire(wire, false);
             }
 
             //boxes
             List<PatchBox> delboxList = new List<PatchBox>(boxList);
             foreach (PatchBox box in delboxList)
             {
-                removePatchBox(box);
+                removePatchBox(box, false);
             }
 
-            PatchBox.boxCount = 0;
-            PatchPanel.panelCount = 0;
-            newBoxPos = new Point(newBoxOrg.X, newBoxOrg.Y);            
+            patchModel.patchHasBeenCleared();
+
+            newBoxPos = new Point(newBoxOrg.X, newBoxOrg.Y);
         }
 
-        public void loadPatch(String patchFileName)
-        {
-            clearPatch();       //start with a clean slate
+        //- box methods ---------------------------------------------------------------
 
-            XmlDocument xmlDoc = new XmlDocument();
-            xmlDoc.Load(patchFileName);
-
-            foreach (XmlNode patchNode in xmlDoc.DocumentElement.ChildNodes)
-            {
-                if (patchNode.Name.Equals("boxes"))
-                {
-                    foreach (XmlNode boxNode in patchNode.ChildNodes)
-                    {
-                        loadPatchBox(boxNode);
-                    }
-                }
-                if (patchNode.Name.Equals("connections"))
-                {
-                    foreach (XmlNode lineNode in patchNode.ChildNodes)
-                    {
-                        loadPatchLine(lineNode);
-                    }
-                }
-            }
-
-            //renumber boxes
-            int boxNum = 0;
-            foreach (PatchBox box in boxList)
-            {
-                box.boxNum = ++boxNum;
-                box.RenumberPanels();
-            }
-            PatchBox.boxCount = boxNum;
-
-            Invalidate();
-        }
-
-        public void savePatch(String patchFileName)
-        {
-            var settings = new XmlWriterSettings();
-            settings.OmitXmlDeclaration = true;
-            settings.Indent = true;
-            settings.NewLineOnAttributes = true;
-
-            XmlWriter xmlWriter = XmlWriter.Create(patchFileName, settings);
-
-            xmlWriter.WriteStartDocument();
-            xmlWriter.WriteStartElement("patchworkerpatch");
-            xmlWriter.WriteAttributeString("version", "1.1.0");
-
-            xmlWriter.WriteStartElement("boxes");
-            foreach (PatchBox box in boxList)
-            {
-                box.saveToXML(xmlWriter);
-            }
-            xmlWriter.WriteEndElement();
-
-            xmlWriter.WriteStartElement("connections");
-            foreach (PatchLine line in lineList)
-            {
-                line.saveToXML(xmlWriter);
-            }
-            xmlWriter.WriteEndElement();
-
-            xmlWriter.WriteEndDocument();
-            xmlWriter.Close();
-        }
-        
-//- box methods ---------------------------------------------------------------
-
+        //add a patch box at default location on canvas
         public void addPatchBox(PatchBox box)
         {
-            box.canvas = this;
-            box.setPos(newBoxPos);
+            addPatchBox(box, newBoxPos.X, newBoxPos.Y);
             newBoxPos.Offset(newBoxOfs);
             if (!this.ClientRectangle.Contains(newBoxOrg))
             {
                 newBoxPos = new Point(newBoxOrg.X, newBoxOrg.Y);      //if we've gone outside the canvas, reset to original new box pos
             }
+        }
+
+        public void addPatchBox(PatchBox box, int xpos, int ypos)
+        {
+            box.canvas = this;
+            box.setPos(new Point(xpos, ypos));
             boxList.Add(box);
+            zList.Add(box);
+            patchModel.patchHasChanged();
             Invalidate();
         }
 
-        public void loadPatchBox(XmlNode boxNode)
+        public void removePatchBox(PatchBox box, bool notify)
         {
-            PatchBox box = PatchBox.loadFromXML(boxNode);
-            if (box != null)
+            List<PatchWire> wires = box.getWireList();
+            foreach (PatchWire wire in wires)
             {
-                box.canvas = this;
-                boxList.Add(box);
+                removePatchWire(wire, false);           //remove all connections first
             }
-        }
-
-        public void removePatchBox(PatchBox box)
-        {
-            List<PatchLine> connections = box.getConnectionList();
-            foreach (PatchLine line in connections)
-            {
-                removePatchLine(line);                  //remove all connections first
-            }
+            patchModel.removePatchBox(box);               //delete box's model
             boxList.Remove(box);                        //and remove box from canvas            
-            box.delete();
-            Invalidate();            
+            zList.Remove(box);
+            if (notify)
+            {
+                patchModel.patchHasChanged();
+            }
+            Invalidate();
         }
 
         public void deselectCurrentSelection()
@@ -215,133 +214,136 @@ namespace Transonic.Patch
                 selectedBox.setSelected(false);
                 selectedBox = null;
             }
-            if (selectedLine != null)
+            if (selectedWire != null)
             {
-                selectedLine.Selected = false;
-                selectedLine = null;
+                selectedWire.Selected = false;
+                selectedWire = null;
             }
         }
 
         public void selectPatchBox(PatchBox box)
         {
             deselectCurrentSelection();
-            boxList.Remove(box);                //remove the box from its place in z-order
-            boxList.Add(box);                   //and add to end of list, making it topmost
+            List<PatchWire> wires = box.getWireList();      //first make all box's wires top of z-order
+            foreach (PatchWire wire in wires)
+            {
+                zList.Remove(wire);
+                zList.Add(wire);
+            }
+            zList.Remove(box);                  //remove the box from its place in z-order
+            zList.Add(box);                     //and add to end of list, making it topmost
             selectedBox = box;                  //mark box as selected for future operations
-            selectedBox.setSelected(true);      //and let it know it
+            selectedBox.setSelected(true);      //and let it know it is
             Invalidate();
         }
 
-        public PatchBox findPatchBox(int boxNum)
+        public  List<PatchBox> getBoxList()
         {
-            PatchBox result = null;
-            foreach (PatchBox box in boxList)
-            {
-                if (box.boxNum == boxNum)
-                {
-                    result = box;
-                    break;
-                }
-            }
-            return result;
+            return boxList;
         }
 
-//- line methods ---------------------------------------------------------------
+        //- wire methods ---------------------------------------------------------------
 
-        public void addPatchLine(PatchPanel source, PatchPanel dest)
+        public void addPatchWire(PatchWire wire)
         {
-            PatchLine line = new PatchLine(this, source, dest);         //create new line & connect it to source & dest panels
-            lineList.Add(line);                                         //add to canvas
-        }
-
-        public void loadPatchLine(XmlNode lineNode)
-        {
-            PatchLine line = PatchLine.loadFromXML(this, lineNode);
-            if (line != null)
-            {
-                lineList.Add(line);
-            }
-        }
-
-        //patch line will be connected to source jack, but may or may not be connected to dest jack
-        public void removePatchLine(PatchLine line)
-        {
-            line.disconnect();
-            lineList.Remove(line);
+            wire.canvas = this;
+            wireList.Add(wire);                                      //add to canvas
+            zList.Add(wire);
+            patchModel.patchHasChanged();
             Invalidate();
         }
 
-        public void selectPatchLine(PatchLine line)
+        //patch wire will be connected to source jack, but may or may not be connected to dest jack
+        public void removePatchWire(PatchWire wire, bool notify)
+        {
+            patchModel.removePatchWire(wire);             //delete wire's model
+            wire.disconnect();                          //and disconnect wire from source & dest jacks
+            wireList.Remove(wire);
+            zList.Remove(wire);
+            if (notify)
+            {
+                patchModel.patchHasChanged();
+            }
+            Invalidate();
+        }
+
+        //selecting a wire does NOT change its z-order pos
+        public void selectPatchWire(PatchWire wire)
         {
             deselectCurrentSelection();
-            selectedLine = line;                 //mark line as selected for future operations
-            selectedLine.Selected = true;        //and let it know it
+            selectedWire = wire;                 //mark wire as selected for future operations
+            selectedWire.Selected = true;        //and let it know it is
             Invalidate();
         }
 
-//- mouse handling ------------------------------------------------------------
+        public List<PatchWire> getWireList()
+        {
+            return wireList;
+        }
+
+        //- mouse handling ------------------------------------------------------------
 
         //dragging & connecting are handled while mouse button is pressed and end when it it let up
         //all other ops are handled with mouse clicks
         protected override void OnMouseDown(MouseEventArgs e)
         {
             base.OnMouseDown(e);
+            this.Focus();
             bool handled = false;
 
-            //check lines first - go in reverse z-order so we check topmost first
-            for (int i = lineList.Count - 1; i >= 0; i--)
+            //go in reverse z-order so we check topmost first
+            for (int i = zList.Count - 1; i >= 0; i--)
             {
-                PatchLine line = lineList[i];
-                if (line.hitTest(e.Location))
+                object obj = zList[i];
+                if (obj is PatchWire)
                 {
-                    selectPatchLine(line);
-                    handled = true;
-                    break;
-                }
-            }
-
-            //check boxes - go in reverse z-order so we check topmost first
-            if (!handled)
-            {
-                for (int i = boxList.Count - 1; i >= 0; i--)
-                {
-                    PatchBox box = boxList[i];
-                    if (box.hitTest(e.Location))
+                    PatchWire wire = (PatchWire)obj;
+                    if (wire.hitTest(e.Location))
                     {
-                        selectPatchBox(box);
+                        selectPatchWire(wire);
                         handled = true;
                         break;
                     }
                 }
 
-                if (handled)        //we clicked somewhere inside a patchbox (and selected it), check if dragging or connecting
+                if (!handled && obj is PatchBox)
                 {
-                    if (selectedBox.dragTest(e.Location))           //if we clicked on title panel
+                    PatchBox box = (PatchBox)obj;
+                    if (box.hitTest(e.Location))
                     {
-                        startDrag(e.Location);
-                    }
-                    else
-                    {
-                        PatchPanel panel = selectedBox.panelHitTest(e.Location);
-                        if (panel != null)
+                        selectPatchBox(box);
+
+                        //we clicked somewhere inside a patchbox (and selected it), check if dragging or connecting                    
+                        if (selectedBox.dragTest(e.Location))           //if we clicked on title panel
                         {
-                            if (panel.canConnectOut())                 //if we clicked on out jack panel
+                            startDrag(e.Location);
+                        }
+                        else
+                        {
+                            PatchPanel panel = selectedBox.panelHitTest(e.Location);
+                            if (panel != null)
                             {
-                                startConnection(panel, e.Location);
-                            }
-                            else if (panel.canTrackMouse())             //if we clicked on a panel that tracks mouse input
-                            {
-                                tracking = true;
-                                trackingPanel = panel;
-                                trackingPanel.onMouseDown(e.Location);
-                                Invalidate();
+                                if (panel.canConnectOut())                 //if we clicked on out jack panel
+                                {
+                                    startConnection(panel, e.Location);
+                                }
+                                else if (panel.canTrackMouse())             //if we clicked on a panel that tracks mouse input
+                                {
+                                    tracking = true;
+                                    trackingPanel = panel;
+                                    trackingPanel.onMouseDown(e.Location);
+                                    Invalidate();
+                                }
                             }
                         }
+                        handled = true;
+                        break;
                     }
                 }
             }
 
-            if (!handled)            //we clicked on a blank area of the canvas - deselect current selection if there is one
+            //we clicked on a blank area of the canvas - deselect current selection if there is one
+            if (!handled)            
             {
                 deselectCurrentSelection();
                 Invalidate();
@@ -414,10 +416,10 @@ namespace Transonic.Patch
         protected override void OnMouseDoubleClick(MouseEventArgs e)
         {
             base.OnMouseDoubleClick(e);
-            if (selectedLine != null)
+            if (selectedWire != null)
             {
-                selectedLine.onDoubleClick(e.Location);
-            } 
+                selectedWire.onDoubleClick(e.Location);
+            }
             else if (selectedBox != null)
             {
                 if (dragging)       //if we're dragging, then we've double clicked in the title bar
@@ -436,8 +438,7 @@ namespace Transonic.Patch
             Invalidate();
         }
 
-
-//- keyboard handling ---------------------------------------------------------
+        //- keyboard handling ---------------------------------------------------------
 
         //delete key removes currently selected box & any connections to other boxes from canvas
         protected override void OnKeyDown(KeyEventArgs e)
@@ -446,29 +447,29 @@ namespace Transonic.Patch
             {
                 if (selectedBox != null)
                 {
-                    removePatchBox(selectedBox);
+                    removePatchBox(selectedBox, true);
                     selectedBox = null;
                 }
 
-                if (selectedLine != null)
+                if (selectedWire != null)
                 {
-                    removePatchLine(selectedLine);
-                    selectedLine = null;
+                    removePatchWire(selectedWire, true);
+                    selectedWire = null;
                 }
             }
         }
 
-//- dragging ------------------------------------------------------------------
+        //- dragging ------------------------------------------------------------------
 
         //track diff between pos when mouse button was pressed and where it is now, and move box by the same offset
-        public void startDrag(Point p)
+        private void startDrag(Point p)
         {
             dragging = true;
             dragOrg = selectedBox.getPos();
             dragOfs = p;
         }
 
-        public void drag(Point p)
+        private void drag(Point p)
         {
             int newX = p.X - dragOfs.X;
             int newY = p.Y - dragOfs.Y;
@@ -476,29 +477,29 @@ namespace Transonic.Patch
             Invalidate();
         }
 
-        public void endDrag(Point p)
+        private void endDrag(Point p)
         {
             dragging = false;
         }
 
-//- connecting ------------------------------------------------------------------
+        //- connecting ------------------------------------------------------------------
 
         //for now, connections start from selected box's output jack
         //if it doesn't have output jack, it would fail jack hit test & not get here
-        public void startConnection(PatchPanel panel, Point p)
+        private void startConnection(PatchPanel panel, Point p)
         {
             connecting = true;
             sourcePanel = panel;
-            connectLineStart = sourcePanel.ConnectionPoint;
-            connectLineEnd = p;
+            connectWireStart = sourcePanel.ConnectionPoint;
+            connectWireEnd = p;
             targetPanel = null;
             Invalidate();
         }
 
-        public void moveConnection(Point p)
+        private void moveConnection(Point p)
         {
-            connectLineEnd = p;
-            
+            connectWireEnd = p;
+
             //check if currently over a possible target box
             bool handled = false;
             for (int i = boxList.Count - 1; i >= 0; i--)
@@ -534,22 +535,21 @@ namespace Transonic.Patch
             Invalidate();
         }
 
-        public void finishConnection(Point p)
+        private void finishConnection(Point p)
         {
             if (targetPanel != null)                              //drop connection on target box we are currently over
             {
-                addPatchLine(sourcePanel, targetPanel);
                 targetPanel.patchbox.setTargeted(false);
+                PatchWire newWire = patchModel.getPatchWire(sourcePanel, targetPanel);    //create new wire & connect it to source & dest panels
+                addPatchWire(newWire);
             }
 
             targetPanel = null;
             sourcePanel = null;
             connecting = false;
-
-            Invalidate();
         }
-        
-//- painting ------------------------------------------------------------------
+
+        //- painting ------------------------------------------------------------------
 
         protected override void OnPaint(PaintEventArgs e)
         {
@@ -557,24 +557,110 @@ namespace Transonic.Patch
             Graphics g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
 
+            //palette border
+            g.DrawLine(Pens.Black, palette.Right, palette.Top, palette.Right, palette.Bottom);
+
             //z-order is front to back - the last one in list is topmost
-            for (int i = 0; i < boxList.Count; i++)
+            foreach (Object obj in zList)
             {
-                boxList[i].paint(g);
+                if (obj is PatchBox)
+                {
+                    ((PatchBox)obj).paint(g);
+                }
+                if (obj is PatchWire)
+                {
+                    ((PatchWire)obj).paint(g);
+                }
             }
 
-            for (int i = 0; i < lineList.Count; i++)
-            {
-                lineList[i].paint(g);
-            }
+            //temporary connecting line
             if (connecting)
             {
-                g.DrawLine(Pens.Red, connectLineStart, connectLineEnd);
+                g.DrawLine(Pens.Red, connectWireStart, connectWireEnd);
             }
+        }
+
+        //- persistance ---------------------------------------------------------------
+
+        public void loadPatch(string patchFilename)
+        {
+            clearPatch();       //start with a clean slate
+
+            EnamlData data = EnamlData.loadFromFile(patchFilename);
+
+            patchModel.loadPatchData(data);       //load model specific data from the patch file
+
+            //temporary dict for mapping a name to its patch box after it's been added to the canvas
+            Dictionary<String, PatchBox> boxDict = new Dictionary<string, PatchBox>();
+
+            List<String> boxList = data.getPathKeys("boxes");
+            foreach (String boxName in boxList)
+            {
+                String boxPath = "boxes." + boxName;
+                PatchBox newBox = patchModel.loadPatchBox(data, boxPath);
+                int xpos = data.getIntValue(boxPath + ".x-pos", 0);
+                int ypos = data.getIntValue(boxPath + ".y-pos", 0);
+                addPatchBox(newBox, xpos, ypos);
+                boxDict.Add(newBox.title, newBox);                
+            }
+
+            List<String> wireList = data.getPathKeys("wires");
+            foreach (String wireName in wireList)
+            {
+                String wirePath = "wires." + wireName;
+                String srcBoxName = data.getStringValue(wirePath + ".source-box", "");
+                String srcPanelName = data.getStringValue(wirePath + ".source-panel", "");
+                PatchBox srcBox = boxDict[srcBoxName];
+                PatchPanel srcPanel = srcBox.getPanel(srcPanelName);
+
+                String destBoxName = data.getStringValue(wirePath + ".dest-box", "");
+                String destPanelName = data.getStringValue(wirePath + ".dest-panel", "");
+                PatchBox destBox = boxDict[destBoxName];
+                PatchPanel destPanel = destBox.getPanel(destPanelName);
+
+                //create new wire & connect it to source & dest panels
+                PatchWire newWire = patchModel.loadPatchWire(data, wirePath, srcPanel, destPanel);    
+                addPatchWire(newWire);
+            }
+        }
+
+        public void savePatch(string patchFilename)
+        {
+            EnamlData data = new EnamlData();
+
+            patchModel.savePatchData(data);       //store model specific data from the patch file
+
+            int count = 1;
+            foreach (PatchBox box in boxList)
+            {
+                String boxPath = "boxes.box-" + count.ToString().PadLeft(3, '0');
+                patchModel.savePatchBox(data, boxPath, box);
+                data.setIntValue(boxPath + ".x-pos", box.getPos().X);
+                data.setIntValue(boxPath + ".y-pos", box.getPos().Y);
+                count++;
+            }
+
+            count = 1;
+            foreach (PatchWire wire in wireList)
+            {
+                String wirePath = "wires.wire-" + count.ToString().PadLeft(3, '0');
+                patchModel.savePatchWire(data, wirePath, wire);
+                data.setStringValue(wirePath + ".source-box", wire.srcPanel.patchbox.title);
+                data.setStringValue(wirePath + ".source-panel", wire.srcPanel.panelName);
+                data.setStringValue(wirePath + ".dest-box", wire.destPanel.patchbox.title);
+                data.setStringValue(wirePath + ".dest-panel", wire.destPanel.panelName);
+                count++;
+            }
+
+            data.saveToFile(patchFilename);
         }
     }
 
     public class PatchLoadException : Exception
+    {
+    }
+
+    public class PatchSaveException : Exception
     {
     }
 }

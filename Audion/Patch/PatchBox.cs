@@ -1,6 +1,6 @@
 ﻿/* ----------------------------------------------------------------------------
 Transonic Patch Library
-Copyright (C) 1995-2018  George E Greaney
+Copyright (C) 1995-2019  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -28,13 +28,9 @@ namespace Transonic.Patch
 {
     public class PatchBox
     {
-        public String boxType;
-        public static int boxCount = 0;
-        public int boxNum;
-
         public PatchCanvas canvas;
         public List<PatchPanel> panels;
-        int panelNum;
+        public Dictionary<String, PatchPanel> panelNames;       //for looking up a panel by its name
         int nextPanelPos;
 
         bool isSelected;
@@ -53,26 +49,23 @@ namespace Transonic.Patch
         readonly Brush TITLECOLOR = Brushes.Black;
         readonly Font TITLEFONT = SystemFonts.DefaultFont;
         readonly int FRAMEWIDTH = 100;
-        readonly int NEWPANELBARHEIGHT = 20;
 
         public PatchBox()
         {
-            boxType = "PatchBox";
-            boxNum = ++boxCount;
             canvas = null;
 
             frame.Location = new Point(0,0);
             frame.Width = FRAMEWIDTH;
 
-            title = "Box " + boxNum.ToString();
+            title = "untitled";
             titleBar.Location = frame.Location;
             titleBar.Width = FRAMEWIDTH;
             titleBar.Height = 25;
             nextPanelPos = titleBar.Bottom;
-            frame.Height = nextPanelPos + NEWPANELBARHEIGHT;           //space at bottom of box for new panel bar
+            frame.Height = nextPanelPos;
 
             panels = new List<PatchPanel>();
-            panelNum = 0;
+            panelNames = new Dictionary<string, PatchPanel>();
 
             isSelected = false;
             isTargeted = false;
@@ -80,16 +73,12 @@ namespace Transonic.Patch
 
 //- box methods ---------------------------------------------------------------
 
-        //called by canvas when removing box - all of it's connections should have been deleted first
-        public virtual void delete()
-        {            
-        }
-
         public bool hitTest(Point p)
         {
             return (frame.Contains(p));
         }
 
+        //box can be dragged by clicking in its title bar
         public bool dragTest(Point p)
         {
             return (titleBar.Contains(p));
@@ -110,6 +99,7 @@ namespace Transonic.Patch
             return frame.Location;
         }
 
+        //move frame, title and all panels to new location
         public void setPos(Point pos)
         {
             Point here = getPos();
@@ -146,60 +136,42 @@ namespace Transonic.Patch
             return result;
         }
 
-        public void addPanel(PatchPanel panel, bool hasNumber)
+        public void addPanel(PatchPanel panel)
         {
             panels.Add(panel);
-            if (!hasNumber)
-            {
-                panel.panelNum = ++panelNum;
-            }
+            panelNames.Add(panel.panelName, panel);
             panel.setPos(frame.Left, frame.Top + nextPanelPos);
             nextPanelPos += panel.frame.Height;
-            frame.Height = nextPanelPos + NEWPANELBARHEIGHT;
+            frame.Height = nextPanelPos;
+        }
+
+        public PatchPanel getPanel(string panelName)
+        {
+            PatchPanel result = null;
+            if (panelNames.ContainsKey(panelName))
+            {
+                result = panelNames[panelName];
+            }
+            return result;
         }
 
         public void removePanel(PatchPanel panel)
         { 
         }
 
-        public PatchPanel findPatchPanel(int panelNum)
-        {
-            PatchPanel result = null;
-            foreach (PatchPanel panel in panels)
-            {
-                if (panel.panelNum == panelNum)
-                {
-                    result = panel;
-                    break;
-                }
-            }
-            return result;
-        }
-
         //called by canvas to get all of a box's connections for deletion
-        public List<PatchLine> getConnectionList()
+        public List<PatchWire> getWireList()
         {
-            List<PatchLine> connections = new List<PatchLine>();
+            List<PatchWire> wires = new List<PatchWire>();
             foreach (PatchPanel panel in panels)
             {
-                if (panel.connectors != null)
+                if (panel.wires != null)
                 {
-                    connections.AddRange(panel.connectors);
+                    wires.AddRange(panel.wires);
                 }
             }
-            return connections;
+            return wires;
         }
-
-        public void RenumberPanels()
-        {
-            int panelcnt = 0;
-            foreach (PatchPanel panel in panels)
-            {
-                panel.panelNum = ++panelcnt;
-            }
-            panelNum = panelcnt;
-        }
-
 
 //- painting ------------------------------------------------------------------
 
@@ -224,78 +196,7 @@ namespace Transonic.Patch
             //frame
             g.DrawRectangle(isSelected ? SELECTEDBORDER : (isTargeted ? TARGETEDBORDER : NORMALBORDER), frame);
         }
-
-//- persistance ---------------------------------------------------------------
-
-        static Dictionary<String, PatchBoxLoader> boxTypeList = new Dictionary<String, PatchBoxLoader>();
-
-        public static void registerBoxType(String panelName, PatchBoxLoader loader)
-        {
-            boxTypeList.Add(panelName, loader);
-        }
-
-        //loading
-        public static PatchBox loadFromXML(XmlNode boxNode)
-        {
-            PatchBox box = null;
-            String boxName = boxNode.Attributes["boxtype"].Value;
-            PatchBoxLoader loader = boxTypeList[boxName];
-            if (loader != null)
-            {
-                box = loader.loadFromXML(boxNode);
-                if (box != null)
-                {
-                    foreach (XmlNode panelNode in boxNode.ChildNodes)
-                    {
-                        PatchPanel panel = PatchPanel.loadFromXML(box, panelNode);
-                        box.addPanel(panel, true);
-                    }
-                }
-            }
-            return box;
-        }
-
-        public virtual void loadAttributesFromXML(XmlNode boxNode)
-        {
-            title = boxNode.Attributes["title"].Value;
-            boxNum = Convert.ToInt32(boxNode.Attributes["number"].Value);
-            int xpos = Convert.ToInt32(boxNode.Attributes["x-pos"].Value);
-            int ypos = Convert.ToInt32(boxNode.Attributes["y-pos"].Value);
-            setPos(new Point(xpos, ypos));
-        }
-
-        //saving
-        public void saveToXML(XmlWriter xmlWriter)
-        {
-            xmlWriter.WriteStartElement("box");
-            saveAttributesToXML(xmlWriter);
-            foreach (PatchPanel panel in panels)
-            {
-                panel.saveToXML(xmlWriter);
-            }
-            xmlWriter.WriteEndElement();
-        }
-
-        public virtual void saveAttributesToXML(XmlWriter xmlWriter)
-        {
-            xmlWriter.WriteAttributeString("boxtype", boxType);
-            xmlWriter.WriteAttributeString("number", boxNum.ToString());
-            xmlWriter.WriteAttributeString("title", title);
-            xmlWriter.WriteAttributeString("x-pos", frame.X.ToString());
-            xmlWriter.WriteAttributeString("y-pos", frame.Y.ToString());
-        }
     }
-
-//- box loader class --------------------------------------------------------
-
-    public class PatchBoxLoader
-    {
-        public virtual PatchBox loadFromXML(XmlNode boxNode)
-        {
-            return new PatchBox();
-        }
-    }
-
 }
 
 //Console.WriteLine("there's no sun in the shadow of the Wizard");

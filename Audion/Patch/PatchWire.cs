@@ -1,6 +1,6 @@
 ﻿/* ----------------------------------------------------------------------------
 Transonic Patch Library
-Copyright (C) 1995-2017  George E Greaney
+Copyright (C) 1995-2019  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -23,11 +23,10 @@ using System.Linq;
 using System.Text;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-using System.Xml;
 
 namespace Transonic.Patch
 {
-    public class PatchLine
+    public class PatchWire
     {
         public PatchCanvas canvas;
 
@@ -35,8 +34,6 @@ namespace Transonic.Patch
         public PatchPanel destPanel;
         public Point srcEnd;                //line's endpoints on the panels
         public Point destEnd;
-
-        public iPatchConnector connector;       //connector in the backing model
 
         Color lineColor;                    //for rendering line
         Color selectedColor;
@@ -46,9 +43,9 @@ namespace Transonic.Patch
         bool isSelected;                    
         
         //for reloading existing connections from a stored patch
-        public PatchLine(PatchCanvas _canvas, PatchPanel srcPanel, PatchPanel destPanel)
+        public PatchWire(PatchPanel srcPanel, PatchPanel destPanel)
         {
-            canvas = _canvas;
+            canvas = null;
             connectSourceJack(srcPanel);
             connectDestJack(destPanel);
 
@@ -91,20 +88,13 @@ namespace Transonic.Patch
         {
             destPanel = _destPanel;
             destEnd = destPanel.ConnectionPoint;
-            destPanel.connectLine(this);                            //connect line & dest panel in view
-            
-            connector = srcPanel.makeConnection(destPanel);         //connect panels in model, get model connector
-            if (connector != null)
-            {
-                connector.setLine(this);                                //and set this as connector's view
-            }
+            destPanel.connectLine(this);                            //connect line & dest panel in view            
         }
 
         public void disconnect()
         {
             if (srcPanel != null)
             {
-                srcPanel.breakConnection(destPanel);                 //disconnect panels in model
                 srcPanel.disconnectLine(this);
                 srcPanel = null;
             }
@@ -158,22 +148,12 @@ namespace Transonic.Patch
 
 //- user input ----------------------------------------------------------------
 
-        //pass user events back to the model's data connector
-
-        public void onDoubleClick(Point pos)
+        public virtual void onDoubleClick(Point pos)
         {
-            if (connector != null)
-            {
-                connector.onDoubleClick(pos);
-            }
         }
 
-        public void onRightClick(Point pos)
+        public virtual void onRightClick(Point pos)
         {
-            if (connector != null)
-            {
-                connector.onRightClick(pos);
-            }
         }
 
 //- painting ------------------------------------------------------------------
@@ -184,56 +164,6 @@ namespace Transonic.Patch
             {
                 g.DrawPath(linePen, path);
             }
-        }
-
-//- persistance ---------------------------------------------------------------
-
-        //get source & dest box nums from XML file and get the matching boxes from the canvas
-        //then get the panel nums from XML and get the matching panels from the boxes
-        //having the source & dest panels. create a new line between them
-        //this will create a connection in the backing model, call loadFromXML() on it with XML node to set its properties
-        public static PatchLine loadFromXML(PatchCanvas canvas, XmlNode lineNode)
-        {
-            PatchLine line = null;
-            try
-            {
-                int srcBoxNum = Convert.ToInt32(lineNode.Attributes["sourcebox"].Value);
-                int srcPanelNum = Convert.ToInt32(lineNode.Attributes["sourcepanel"].Value);
-                int destBoxNum = Convert.ToInt32(lineNode.Attributes["destbox"].Value);
-                int destPanelNum = Convert.ToInt32(lineNode.Attributes["destpanel"].Value);
-
-                PatchBox sourceBox = canvas.findPatchBox(srcBoxNum);
-                PatchBox destBox = canvas.findPatchBox(destBoxNum);
-                if (sourceBox != null && destBox != null)
-                {
-                    PatchPanel sourcePanel = sourceBox.findPatchPanel(srcPanelNum);
-                    PatchPanel destPanel = destBox.findPatchPanel(destPanelNum);
-
-                    if (sourcePanel != null && destPanel != null)
-                    {
-                        line = new PatchLine(canvas, sourcePanel, destPanel);                        
-                    }
-                }
-
-            }
-            catch (Exception e)
-            {
-                throw new PatchLoadException();
-            }
-
-            return line;
-        }
-
-        public void saveToXML(XmlWriter xmlWriter)
-        {
-            //save patch line attributes
-            xmlWriter.WriteStartElement("connection");
-            xmlWriter.WriteAttributeString("sourcebox", srcPanel.patchbox.boxNum.ToString());
-            xmlWriter.WriteAttributeString("sourcepanel", srcPanel.panelNum.ToString());
-            xmlWriter.WriteAttributeString("destbox", destPanel.patchbox.boxNum.ToString());
-            xmlWriter.WriteAttributeString("destpanel", destPanel.panelNum.ToString());
-
-            xmlWriter.WriteEndElement();
         }
     }
 }
