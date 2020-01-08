@@ -30,14 +30,48 @@ namespace TidepoolD
     public class Linker
     {
         public Tidepool tp;
+        public Section text_section;
+        public Section data_section;
+        public Section bss_section;     // predefined sections */
+        public Section common_section;
+        public Section cur_text_section;    // current section where function code is generated */
 
-        public Linker(Tidepool _tp)
-        {            
+        public Linker(Tidepool _tp)     //tccelf_new
+        {
             tp = _tp;
+
+            text_section = new Section(tp, ".text", ElfObject.SHT_PROGBITS, ElfObject.SHF_ALLOC | ElfObject.SHF_EXECINSTR);
+            data_section = new Section(tp, ".data", ElfObject.SHT_PROGBITS, ElfObject.SHF_ALLOC | ElfObject.SHF_WRITE);
+            bss_section = new Section(tp, ".bss", ElfObject.SHT_NOBITS, ElfObject.SHF_ALLOC | ElfObject.SHF_WRITE);
+
         }
 
         public void elf_output_file(string outname)
-        {            
+        {
+        }
+
+        public void section_realloc(Section sec, long new_size)
+        {
+        }
+    }
+
+    public class Section
+    {
+        public byte[] data;
+        public long data_allocated;
+        public String name;
+        private Tidepool tp;
+        private string p;
+        private int p_2;
+        private int p_3;
+
+        public Section(Tidepool tp, string p, int p_2, int p_3)
+        {
+            // TODO: Complete member initialization
+            this.tp = tp;
+            this.p = p;
+            this.p_2 = p_2;
+            this.p_3 = p_3;
         }
     }
 }

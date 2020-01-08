@@ -31,23 +31,34 @@ namespace TidepoolD
     {
         public Tidepool tp;
         public Preprocessor pp;
+        public i386Generator i386;
+        public Linker link;
 
         int VT_CONST = 0x0030;
 
         int VT_INT = 3;
 
-        uint nocode_wanted;      // no code generation wanted 
+        public int ind;
+
+        public SValue[] __vstack;
+        public int vtop;
+
+        public uint nocode_wanted;      // no code generation wanted 
 
         //cons
         public Generator(Tidepool _tp)
         {
             tp = _tp;
+            i386 = new i386Generator(this);
+            __vstack = new SValue[100];
+
         }
 
         //---------------------------------------------------------------------
 
-        public int tpgen_compile()
+        public int tpgen_compile()      //tccgen_compile
         {
+            link.cur_text_section = null;
             pp.next();
             decl(VT_CONST);
 
@@ -72,6 +83,13 @@ namespace TidepoolD
         public void patch_storage()
         {
             //throw new NotImplementedException();
+        }
+
+        public int gv(int rc)
+        {
+            int r = 0;
+            i386.load(r, __vstack[vtop]);
+            return r;
         }
 
         public bool parse_btype(CType type, AttributeDef ad)
@@ -140,9 +158,86 @@ namespace TidepoolD
             return ret;
         }
 
+        public void unary()
+        {
+        }
+
+        public void expr_prod()
+        {
+            unary();
+        }
+
+        public void expr_sum()
+        {
+            expr_prod();
+        }
+
+        public void expr_shift()
+        {
+            expr_sum();
+        }
+
+        public void expr_cmp()
+        {
+            expr_shift();
+        }
+
+        public void expr_cmpeq()
+        {
+            expr_cmp();
+        }
+
+        public void expr_and()
+        {
+            expr_cmpeq();
+        }
+
+        public void expr_xor()
+        {
+            expr_and();
+        }
+
+        public void expr_or()
+        {
+            expr_xor();
+        }
+
+        public void expr_land()
+        {
+            expr_or();
+        }
+
+        public void expr_lor()
+        {
+            expr_land();
+        }
+
+        public void expr_cond()
+        {
+            expr_lor();
+        }
+
+        public void expr_eq()
+        {
+            expr_cond();
+        }
+
         public void gexpr()
         {
-            pp.next();
+            while (true)
+            {
+                expr_eq();
+                if (pp.tok.type != TokenType.COMMA)
+                    break;
+                vpop();
+                pp.next();
+            }
+        }
+
+        public void gfunc_return(CType func_type)
+        {
+            gv(i386Generator.RC_IRET);
+            vtop--;
         }
 
         public void block(int bsym, int csym, int is_expr)
@@ -178,6 +273,7 @@ namespace TidepoolD
                 if (pp.tok.type != TokenType.SEMICOLON)
                 {
                     gexpr();
+                    gfunc_return(null);
                 }
                 pp.skip(TokenType.SEMICOLON);
             }
@@ -248,6 +344,10 @@ namespace TidepoolD
                     {
                         sym = external_global_sym();
                         patch_storage();
+                        // compute text section */
+                        link.cur_text_section = ad.section;
+                        if (link.cur_text_section == null)
+                            link.cur_text_section = link.text_section;
                         gen_function(sym);
                         break;
                     }
@@ -262,6 +362,10 @@ namespace TidepoolD
         }
     }
 
+    public class SValue
+    {
+    }
+
     public class Sym
     {
     }
@@ -274,5 +378,62 @@ namespace TidepoolD
 
     public class AttributeDef
     {
+        public Section section;
     }
+
+    public class i386Generator
+    {
+        public Generator gen;
+
+        public static int RC_EAX = 0x0004;
+        public static int RC_IRET = RC_EAX; /* function return: integer register */
+
+        public i386Generator(Generator _gen)
+        {
+            gen = _gen;
+        }
+
+        public void g(uint c)
+        {
+            if (gen.nocode_wanted != 0)
+                return;
+            int ind1 = gen.ind + 1;
+            if (ind1 > gen.link.cur_text_section.data_allocated)
+            {
+                gen.link.section_realloc(gen.link.cur_text_section, ind1);
+            }
+            gen.link.cur_text_section.data[gen.ind] = (byte)c;
+            gen.ind = ind1;
+        }
+
+        public void o(uint c)
+        {
+            while (c != 0)
+            {
+                g(c);
+                c = c >> 8;
+            }
+        }
+
+        public void gen_le32(uint c)
+        {
+            g(c);
+            g(c >> 8);
+            g(c >> 16);
+            g(c >> 24);
+        }
+
+        public void gen_addr32(int r, Sym sym, int c)
+        {
+            //if (r & VT_SYM)
+            //    greloc(cur_text_section, sym, ind, R_386_32);
+            gen_le32((uint)c);
+        }
+
+        public void load(int r, SValue sv)
+        {
+            o((uint)(0xb8 + r));    // mov $xx, r */
+        }
+    }
+
 }

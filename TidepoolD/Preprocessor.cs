@@ -30,8 +30,9 @@ namespace TidepoolD
     public class Preprocessor
     {
         public Tidepool tp;
-        public Token tok;
         public BufferedFile file;
+        public Token tok;
+        public CValue tokc;
 
         //debugging
         int idx;
@@ -39,18 +40,16 @@ namespace TidepoolD
                                   TokenType.RETURN, TokenType.INTCONST, TokenType.SEMICOLON,
                                   TokenType.RBRACE, TokenType.EOF};
 
+        //cons
         public Preprocessor(Tidepool _tp)
         {
             tp = _tp;
             tok = new Token();
+            tokc = new CValue();
             idx = 0;
         }
 
-        public void next()
-        {
-            tok.type = tokList[idx];
-            idx++;
-        }
+        //---------------------------------------------------------------------
 
         public void skip(TokenType c)
         {
@@ -59,11 +58,33 @@ namespace TidepoolD
             next();
         }
 
+        public void expect(String msg)
+        {
+            tp.tpError("%s expected", msg);
+        }
+
         public String get_tok_str(Token tok)
         {
             return "token";
         }
+
+        public void next()
+        {
+            //set up for debugging
+            tok.type = tokList[idx];
+            if (idx == 1)
+            {
+                tok.num = 100;
+            }
+            if (idx == 6)
+            {
+                tokc.str = "69";
+            }
+            idx++;
+        }
     }
+
+    //-------------------------------------------------------------------------
 
     public class BufferedFile
     {
@@ -73,6 +94,17 @@ namespace TidepoolD
     public class Token
     {
         public TokenType type;
+        public int num;
+    }
+
+    public class TokenSym
+    {
+        public String str;
+    }
+
+    public class CValue
+    {
+        public String str;
     }
 
     public enum TokenType
@@ -153,6 +185,7 @@ namespace TidepoolD
         ELIPSIS,
         COMMA,
 
-        EOF
+        EOF,
+        LASTTOKEN
     }
 }

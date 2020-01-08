@@ -41,7 +41,10 @@ namespace TidepoolD
             pp = new Preprocessor(this);
             gen = new Generator(this);
             link = new Linker(this);
+
+            //wire up components
             gen.pp = pp;
+            gen.link = link;
         }
 
         public void tpError(String fmt, params object[] args)
