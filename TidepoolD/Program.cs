@@ -34,7 +34,7 @@ namespace TidepoolD
             Tidepool tp = new Tidepool();
             String sourcecode = "int main() { return 0; }";
             tp.compileCode(sourcecode);
-            tp.outputFile();
+            tp.outputFile("test.o");
         }
     }
 }

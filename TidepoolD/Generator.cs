@@ -40,10 +40,17 @@ namespace TidepoolD
 
         public int ind;
 
+        public int local_scope;
+
         public SValue[] __vstack;
         public int vtop;
 
         public uint nocode_wanted;      // no code generation wanted 
+
+        public int last_line_num;
+        public int last_ind;
+        public int func_ind;            // debug last line number and pc */
+        public String funcname;
 
         //cons
         public Generator(Tidepool _tp)
@@ -70,6 +77,10 @@ namespace TidepoolD
             return null;
         }
 
+        public void vsetc(CType type, int r, CValue vc)
+        {
+        }
+
         public void vpop()
         {
             //throw new NotImplementedException();
@@ -92,7 +103,7 @@ namespace TidepoolD
             return r;
         }
 
-        public bool parse_btype(CType type, AttributeDef ad)
+        public bool parse_btype(CType type, ref AttributeDef ad)
         {
             int t = VT_INT;
             int u;
@@ -100,6 +111,8 @@ namespace TidepoolD
             bool type_found = false;
             bool typespec_found = false;
             Sym s;
+
+            ad = new AttributeDef();
             bool done = false;
 
             while (!done)
@@ -160,6 +173,21 @@ namespace TidepoolD
 
         public void unary()
         {
+            int t;
+            CType type = new CType();
+
+            switch (pp.tok.type)
+            {
+                case TokenType.INTCONST:
+                    t = VT_INT;
+                    type.t = t;
+                    vsetc(type, VT_CONST, pp.tokc);
+                    pp.next();
+                    break;
+
+                default:
+                    break;
+            }
         }
 
         public void expr_prod()
@@ -306,12 +334,20 @@ namespace TidepoolD
         public void gen_function(Sym sym)
         {
             nocode_wanted = 0;
-            
+            ind = link.cur_text_section.data_offset;
+
+            local_scope = 1;                // for function parameters */
+            //i386.gfunc_prolog(sym.type);
+            local_scope = 0;
+
             block(0, 0, 0);
-            
             nocode_wanted = 0;
-            
-            nocode_wanted = 0x80000000;   
+
+            i386.gfunc_epilog();
+            link.cur_text_section.data_offset = ind;
+
+
+            nocode_wanted = 0x80000000;
         }
 
         public int decl0(int l, int is_for_loop_init, Sym func_sym)
@@ -326,7 +362,7 @@ namespace TidepoolD
 
             while (true)
             {
-                if (!parse_btype(btype, ad))
+                if (!parse_btype(btype, ref ad))
                 {
                     break;
                 }
@@ -368,6 +404,7 @@ namespace TidepoolD
 
     public class Sym
     {
+        public CType type;         // associated type */
     }
 
     public class CType
@@ -379,6 +416,11 @@ namespace TidepoolD
     public class AttributeDef
     {
         public Section section;
+
+        public AttributeDef()
+        {
+            section = null;
+        }
     }
 
     public class i386Generator
@@ -387,6 +429,9 @@ namespace TidepoolD
 
         public static int RC_EAX = 0x0004;
         public static int RC_IRET = RC_EAX; /* function return: integer register */
+
+        public int func_ret_sub;
+
 
         public i386Generator(Generator _gen)
         {
@@ -434,6 +479,23 @@ namespace TidepoolD
         {
             o((uint)(0xb8 + r));    // mov $xx, r */
         }
+
+        public void gfunc_prolog(CType func_type)
+        {
+            func_ret_sub = 0;
+        }
+
+        public void gfunc_epilog()
+        {
+            o(0xc9);          // leave */
+            if (func_ret_sub == 0)
+            {
+                o(0xc3);      // ret */
+            }
+
+
+        }
+
     }
 
 }

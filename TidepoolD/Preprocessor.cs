@@ -147,7 +147,7 @@ namespace TidepoolD
         VOID,
         VOLATILE,
         WHILE,
-        
+
         //punctuation
         LBRACKET,       //[
         RBRACKET,       //]
