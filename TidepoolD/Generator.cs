@@ -34,7 +34,9 @@ namespace TidepoolD
         public i386Generator i386;
         public Linker link;
 
-        int VT_CONST = 0x0030;
+        int VSTACK_SIZE = 256;
+
+        public const int VT_CONST = 0x0030;
 
         int VT_INT = 3;
 
@@ -47,6 +49,9 @@ namespace TidepoolD
 
         public uint nocode_wanted;      // no code generation wanted 
 
+        public CType func_vt;           // current function return type (used by return instruction) */
+
+
         public int last_line_num;
         public int last_ind;
         public int func_ind;            // debug last line number and pc */
@@ -57,8 +62,7 @@ namespace TidepoolD
         {
             tp = _tp;
             i386 = new i386Generator(this);
-            __vstack = new SValue[100];
-
+            __vstack = new SValue[VSTACK_SIZE + 1];
         }
 
         //---------------------------------------------------------------------
@@ -77,8 +81,22 @@ namespace TidepoolD
             return null;
         }
 
+        //---------------------------------------------------------------------
+
         public void vsetc(CType type, int r, CValue vc)
         {
+
+            if (vtop >= (VSTACK_SIZE - 1))
+                tp.tpError("memory full (vstack)");
+
+            SValue sv = new SValue();
+            sv.type = type;
+            sv.r = r;
+            sv.r2 = VT_CONST;
+            sv.c = vc;
+            sv.sym = null;
+            vtop++;
+            __vstack[vtop] = sv;
         }
 
         public void vpop()
@@ -96,9 +114,14 @@ namespace TidepoolD
             //throw new NotImplementedException();
         }
 
+        public int get_reg(int rc)
+        {
+            return 0;
+        }
+
         public int gv(int rc)
         {
-            int r = 0;
+            int r = get_reg(rc); ;
             i386.load(r, __vstack[vtop]);
             return r;
         }
@@ -301,7 +324,7 @@ namespace TidepoolD
                 if (pp.tok.type != TokenType.SEMICOLON)
                 {
                     gexpr();
-                    gfunc_return(null);
+                    gfunc_return(func_vt);
                 }
                 pp.skip(TokenType.SEMICOLON);
             }
@@ -398,16 +421,23 @@ namespace TidepoolD
         }
     }
 
+    //-------------------------------------------------------------------------
+
     public class SValue
     {
+        public CType type;      /* type */
+        public int r;           /* register + flags */
+        public int r2;          /* second register, used for 'long long' type. If not used, set to VT_CONST */
+        public CValue c;        /* constant, if VT_CONST */
+        public Sym sym;         /* symbol, if (VT_SYM | VT_CONST), or if result of unary() for an identifier. */
     }
 
     public class Sym
     {
-        public CType type;         // associated type */
+        public CType type;          // associated type */
     }
 
-    public class CType
+    public class CType              // type definition */
     {
         public int t;
         public Sym reff;
@@ -445,7 +475,7 @@ namespace TidepoolD
             int ind1 = gen.ind + 1;
             if (ind1 > gen.link.cur_text_section.data_allocated)
             {
-                gen.link.section_realloc(gen.link.cur_text_section, ind1);
+                gen.link.cur_text_section.realloc(ind1);
             }
             gen.link.cur_text_section.data[gen.ind] = (byte)c;
             gen.ind = ind1;
@@ -477,7 +507,17 @@ namespace TidepoolD
 
         public void load(int r, SValue sv)
         {
-            o((uint)(0xb8 + r));    // mov $xx, r */
+            int fr = sv.r;
+            //int ft = sv.type.t & ~VT_DEFSIGN;
+            int fc = (int)sv.c.i;
+
+            int v = fr;
+            if (v == Generator.VT_CONST)
+            {
+                o((uint)(0xb8 + r));    // mov $xx, r */
+                gen_addr32(fr, sv.sym, fc);
+            }
+
         }
 
         public void gfunc_prolog(CType func_type)

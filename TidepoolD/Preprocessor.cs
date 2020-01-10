@@ -79,6 +79,7 @@ namespace TidepoolD
             if (idx == 6)
             {
                 tokc.str = "69";
+                tokc.i = 69;
             }
             idx++;
         }
@@ -104,6 +105,9 @@ namespace TidepoolD
 
     public class CValue
     {
+        public float f;
+        public double d;
+        public ulong i;
         public String str;
     }
 

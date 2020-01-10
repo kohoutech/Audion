@@ -7,12 +7,6 @@ namespace TidepoolD
 {
     public class ElfObject
     {
-        public static int SHT_PROGBITS = 1;		// Program data */
-        public static int SHT_NOBITS = 8;		// Program space with no data (bss) */
-
-        public static int SHF_WRITE = (1 << 0);         // Writable */
-        public static int SHF_ALLOC = (1 << 1);	        // Occupies memory during execution */
-        public static int SHF_EXECINSTR = (1 << 2);	    // Executable */
     }
 
     //-------------------------------------------------------------------------
@@ -106,8 +100,8 @@ namespace TidepoolD
         public static int ElfShdrSize = 0x28;
 
         public int sh_name;		        /* Section name (string tbl index) */
-        public int sh_type;		        /* Section type */
-        public int sh_flags;		    /* Section flags */
+        public SectionType sh_type;		/* Section type */
+        public SectionFlags sh_flags;   /* Section flags */
         public int sh_addr;		        /* Section virtual addr at execution */
         public int sh_offset;		    /* Section file offset */
         public int sh_size;		        /* Section size in bytes */
@@ -121,8 +115,8 @@ namespace TidepoolD
             byte[] data = new byte[ElfShdrSize];
 
             Array.Copy(BitConverter.GetBytes(sh_name), 0, data, 0x00, 4);
-            Array.Copy(BitConverter.GetBytes(sh_type), 0, data, 0x04, 4);
-            Array.Copy(BitConverter.GetBytes(sh_flags), 0, data, 0x08, 4);
+            Array.Copy(BitConverter.GetBytes((int)sh_type), 0, data, 0x04, 4);
+            Array.Copy(BitConverter.GetBytes((int)sh_flags), 0, data, 0x08, 4);
             Array.Copy(BitConverter.GetBytes(sh_addr), 0, data, 0x0c, 4);
             Array.Copy(BitConverter.GetBytes(sh_offset), 0, data, 0x10, 4);
             Array.Copy(BitConverter.GetBytes(sh_size), 0, data, 0x14, 4);
