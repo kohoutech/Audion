@@ -92,6 +92,10 @@ namespace TidepoolD
         public char[] buffer;
     }
 
+    public class TokenString
+    {
+    }
+
     public class Token
     {
         public TokenType type;
@@ -101,6 +105,12 @@ namespace TidepoolD
     public class TokenSym
     {
         public String str;
+    }
+
+    public class CType              // type definition */
+    {
+        public ValueType t;
+        public Sym reff;
     }
 
     public class CValue
