@@ -314,12 +314,12 @@ namespace TidepoolD
 
             if ((sh_flags & SectionFlags.SHF_PRIVATE) != 0)
             {
-                tp.priv_sections.Add(this);                
+                tp.priv_sections.Add(this);
             }
             else
             {
                 sh_num = tp.sections.Count;
-                tp.sections.Add(this);                
+                tp.sections.Add(this);
             }
         }
 

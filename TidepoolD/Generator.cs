@@ -100,7 +100,7 @@ namespace TidepoolD
 
         public void vpop()
         {
-            //throw new NotImplementedException();
+            vtop--;
         }
 
         public Sym external_global_sym(int v, CType type, int r)
@@ -171,27 +171,59 @@ namespace TidepoolD
             return type_found;
         }
 
-        public int post_type()
+        public int post_type(CType type, AttributeDef ad, ValueType storage, int td)
         {
             int l = 0;
+                    int arg_size = 0;
+
 
             if (pp.tok.type == TokenType.LPAREN)
             {
                 pp.next();
                 if (pp.tok.type == TokenType.RPAREN)
                     l = 0;
+
                 pp.skip(TokenType.RPAREN);
+                type.t &= ~(ValueType.VT_CONSTANT); 
+
+                        ad.f.func_args = arg_size;
+        ad->f.func_type = l;
+        s = sym_push(SYM_FIELD, type, 0, 0);
+        s->a = ad->a;
+        s->f = ad->f;
+        s->next = first;
+        type->t = VT_FUNC;
+        type->reff = s;
+
             }
             return l;
         }
 
         public CType type_decl(CType type, AttributeDef ad, ref int v, int td)
         {
-            CType ret = null;
-            pp.next();
-            post_type();
+            ValueType storage = type.t & ValueType.VT_STORAGE;
+            type.t &= ~(ValueType.VT_STORAGE);
+            CType post = type;
+            CType ret = type;
+
+            while (pp.tok.type == TokenType.STAR)
+            {
+            }
+
+            if (pp.tok.type == TokenType.LPAREN)
+            {
+            }
+            else if ((pp.tok.type == TokenType.IDENT) && ((td & TYPE_DIRECT) != 0))
+            {
+                /* type identifier */
+                v = pp.tok.num;
+                pp.next();
+            }
+            post_type(post, ad, storage, 0);
             return ret;
         }
+
+        //---------------------------------------
 
         public void unary()
         {
@@ -283,6 +315,8 @@ namespace TidepoolD
                 pp.next();
             }
         }
+
+        //---------------------------------------
 
         public void gfunc_return(CType func_type)
         {
@@ -396,7 +430,7 @@ namespace TidepoolD
                 while (true)
                 {
                     type = btype;
-                    type_decl(type, ad,  ref v, TYPE_DIRECT);
+                    type_decl(type, ad, ref v, TYPE_DIRECT);
 
                     if (pp.tok.type == TokenType.LBRACE)        //function body
                     {
@@ -437,10 +471,15 @@ namespace TidepoolD
 
     public class FuncAttr
     {
+        int func_call;          // calling convention (0..5), see below */
+        int func_type;          // FUNC_OLD/NEW/ELLIPSIS */
+        int func_args;          // PE __stdcall args */
     }
 
     public class AttributeDef
     {
+        public SymAttr a;
+        public FuncAttr f;
         public Section section;
 
         public AttributeDef()
@@ -499,7 +538,19 @@ namespace TidepoolD
         VT_CONSTANT = 0x0100,           // const modifier */
         VT_VOLATILE = 0x0200,           // volatile modifier */
         VT_VLA = 0x0400,                // VLA type (also has VT_PTR and VT_ARRAY) */
-        VT_LONG = 0x0800                // long type (also has VT_INT rsp. VT_LLONG) */
+        VT_LONG = 0x0800,                // long type (also has VT_INT rsp. VT_LLONG) */
+
+        VT_EXTERN = 0x00001000,  // extern definition */
+        VT_STATIC = 0x00002000,  // static variable */
+        VT_TYPEDEF = 0x00004000,  // typedef definition */
+        VT_INLINE = 0x00008000,  // inline definition */
+
+        VT_STRUCT_MASK = (((1 << (6 + 6)) - 1) << 20 | VT_BITFIELD),
+
+
+        VT_STORAGE = (VT_EXTERN | VT_STATIC | VT_TYPEDEF | VT_INLINE),
+        VT_TYPE = (~(VT_STORAGE | VT_STRUCT_MASK))
+
     }
 
     //-------------------------------------------------------------------------

@@ -200,6 +200,6 @@ namespace TidepoolD
         COMMA,
 
         EOF,
-        LASTTOKEN
+        LAST_TOKEN
     }
 }
