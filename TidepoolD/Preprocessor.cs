@@ -30,9 +30,12 @@ namespace TidepoolD
     public class Preprocessor
     {
         public Tidepool tp;
+
         public BufferedFile file;
         public Token tok;
         public CValue tokc;
+
+        public List<TokenSym> table_ident;
 
         //debugging
         int idx;
@@ -104,6 +107,11 @@ namespace TidepoolD
 
     public class TokenSym
     {
+        public Sym sym_define;              /* direct pointer to define */
+        public Sym sym_label;               /* direct pointer to label */
+        public Sym sym_struct;              /* direct pointer to structure */
+        public Sym sym_identifier;          /* direct pointer to identifier */
+        public int tok;                     /* token number */
         public String str;
     }
 

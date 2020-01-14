@@ -36,12 +36,23 @@ namespace TidepoolD
 
         const int VSTACK_SIZE = 256;
 
+        const int SYM_STRUCT = 0x40000000;         // struct/union/enum symbol space */
+        const int SYM_FIELD = 0x20000000;          // struct/union field symbol space */
+        const int SYM_FIRST_ANOM = 0x10000000;     // first anonymous sym */
+
         const int TYPE_ABSTRACT = 1;        // type without variable */
         const int TYPE_DIRECT = 2;          // type with variable */
 
         public int ind;
 
+        public List<Sym> global_stack;
+        public List<Sym> local_stack;
+        public List<Sym> define_stack;
+        public List<Sym> global_label_stack;
+        public List<Sym> local_label_stack;
         public int local_scope;
+        public int in_sizeof;
+        public int section_sym;
 
         public SValue[] __vstack;
         public int vtop;
@@ -49,7 +60,6 @@ namespace TidepoolD
         public uint nocode_wanted;      // no code generation wanted 
 
         public CType func_vt;           // current function return type (used by return instruction) */
-
 
         public int last_line_num;
         public int last_ind;
@@ -61,6 +71,9 @@ namespace TidepoolD
         {
             tp = _tp;
             i386 = new i386Generator(this);
+
+            global_stack = new List<Sym>();
+            local_stack = null;
             __vstack = new SValue[VSTACK_SIZE + 1];
         }
 
@@ -75,9 +88,35 @@ namespace TidepoolD
             return 0;
         }
 
-        public Sym sym_find(Token tok)
+        public Sym sym_push2(List<Sym> ps, int v, ValueType t, int c)
+        {
+            Sym s;
+
+            s = new Sym();
+            s.v = v;
+            s.type.t = t;
+            s.c = c;
+
+            /* add in stack */
+            ps.Add(s);
+            return s;
+        }
+
+
+        public Sym sym_find(int v)
         {
             return null;
+        }
+
+        public Sym sym_push(int v, CType type, int r, int c)
+        {
+            List<Sym> ps = global_stack;
+            if (local_stack != null)
+            {
+                ps = local_stack;
+            }
+            Sym s = sym_push2(ps, v, type.t, c);
+            return s;
         }
 
         //---------------------------------------------------------------------
@@ -105,7 +144,17 @@ namespace TidepoolD
 
         public Sym external_global_sym(int v, CType type, int r)
         {
-            return null;
+            Sym s;
+
+            s = sym_find(v);
+            if (s != null)
+            {
+                s = global_identifier_push(v, type->t | ValueType.VT_EXTERN, 0);
+                s.type.reff = type.reff;
+                s.r = r | ValueType.VT_CONST | ValueType.VT_SYM;
+            }
+            return s;
+
         }
 
         public void patch_storage()
@@ -154,7 +203,7 @@ namespace TidepoolD
                             done = true;
                             break;
                         }
-                        s = sym_find(pp.tok);
+                        s = sym_find(pp.tok.num);
                         if (s == null)
                         {
                             done = true;
@@ -174,8 +223,9 @@ namespace TidepoolD
         public int post_type(CType type, AttributeDef ad, ValueType storage, int td)
         {
             int l = 0;
-                    int arg_size = 0;
-
+            int arg_size = 0;
+            Sym s;
+            Sym first = null;
 
             if (pp.tok.type == TokenType.LPAREN)
             {
@@ -184,16 +234,16 @@ namespace TidepoolD
                     l = 0;
 
                 pp.skip(TokenType.RPAREN);
-                type.t &= ~(ValueType.VT_CONSTANT); 
+                type.t &= ~(ValueType.VT_CONSTANT);
 
-                        ad.f.func_args = arg_size;
-        ad->f.func_type = l;
-        s = sym_push(SYM_FIELD, type, 0, 0);
-        s->a = ad->a;
-        s->f = ad->f;
-        s->next = first;
-        type->t = VT_FUNC;
-        type->reff = s;
+                ad.f.func_args = arg_size;
+                ad.f.func_type = l;
+                s = sym_push(SYM_FIELD, type, 0, 0);
+                s.a = ad.a;
+                s.f = ad.f;
+                s.next = first;
+                type.t = ValueType.VT_FUNC;
+                type.reff = s;
 
             }
             return l;
@@ -471,9 +521,9 @@ namespace TidepoolD
 
     public class FuncAttr
     {
-        int func_call;          // calling convention (0..5), see below */
-        int func_type;          // FUNC_OLD/NEW/ELLIPSIS */
-        int func_args;          // PE __stdcall args */
+        public int func_call;          // calling convention (0..5), see below */
+        public int func_type;          // FUNC_OLD/NEW/ELLIPSIS */
+        public int func_args;          // PE __stdcall args */
     }
 
     public class AttributeDef
@@ -484,13 +534,38 @@ namespace TidepoolD
 
         public AttributeDef()
         {
+            a = new SymAttr();
+            f = new FuncAttr();
             section = null;
         }
     }
 
     public class Sym
     {
+        public int v;               // symbol token */
+        public int r;               // associated register or VT_CONST/VT_LOCAL and LVAL type */
+        public SymAttr a;           // symbol attributes */
+        public int c;               // associated number or Elf symbol index */
+        public FuncAttr f;          // function attributes */
         public CType type;          // associated type */
+        public Sym next;            // next related symbol (for fields and anoms) */
+        int asm_label;              // associated asm label */
+
+        public Sym prev;            // prev symbol in stack */
+        public Sym prev_tok;        // previous symbol for this token */
+
+        public Sym()
+        {
+            v = 0;
+            r = 0;
+            a = new SymAttr();
+            c = 0;
+            f = new FuncAttr();
+            type = new CType();
+            next = null;
+            prev = null;
+            prev_tok = null;
+        }
     }
 
     [Flags]
