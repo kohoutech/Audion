@@ -46,6 +46,7 @@
     <Compile Include="ElfObject.cs" />
     <Compile Include="Generator.cs" />
     <Compile Include="Linker.cs" />
+    <Compile Include="Parser.cs" />
     <Compile Include="Preprocessor.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
