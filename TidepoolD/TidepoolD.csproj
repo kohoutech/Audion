@@ -43,7 +43,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="ElfObject.cs" />
+    <Compile Include="RJDObject.cs" />
     <Compile Include="Generator.cs" />
     <Compile Include="Linker.cs" />
     <Compile Include="Parser.cs" />

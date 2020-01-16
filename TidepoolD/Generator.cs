@@ -3,7 +3,7 @@ Tidepool : a C compiler
  
 based on Fabrice Bellard's Tiny C compiler
 
-Copyright (C) 2020  George E Greaney
+Copyright (C) 2018-2020  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -88,6 +88,8 @@ namespace TidepoolD
             return 0;
         }
 
+        //- symbol management -------------------------------------------------
+
         public Sym sym_push2(List<Sym> ps, int v, ValueType t, int c)
         {
             Sym s;
@@ -119,6 +121,12 @@ namespace TidepoolD
             return s;
         }
 
+        public Sym global_identifier_push(int v, ValueType t, int c)
+        {
+            Sym s = sym_push2(global_stack, v, t, c);
+            return s;
+        }
+
         //---------------------------------------------------------------------
 
         public void vsetc(CType type, int r, CValue vc)
@@ -142,19 +150,18 @@ namespace TidepoolD
             vtop--;
         }
 
-        public Sym external_global_sym(int v, CType type, int r)
+        public Sym external_global_sym(int v, CType type, ValueType r)
         {
             Sym s;
 
             s = sym_find(v);
             if (s != null)
             {
-                s = global_identifier_push(v, type->t | ValueType.VT_EXTERN, 0);
+                s = global_identifier_push(v, (type.t | ValueType.VT_EXTERN), 0);
                 s.type.reff = type.reff;
-                s.r = r | ValueType.VT_CONST | ValueType.VT_SYM;
+                s.r = (int)(r | ValueType.VT_CONST | ValueType.VT_SYM);
             }
             return s;
-
         }
 
         public void patch_storage()
@@ -174,7 +181,7 @@ namespace TidepoolD
             return r;
         }
 
-        public bool parse_btype(CType type, ref AttributeDef ad)
+        public bool parseBaseType(CType type, ref AttributeDef ad)      //parse_btype
         {
             ValueType t = ValueType.VT_INT;
             ValueType u;
@@ -468,7 +475,7 @@ namespace TidepoolD
 
             while (true)
             {
-                if (!parse_btype(btype, ref ad))
+                if (!parseBaseType(btype, ref ad))
                 {
                     break;
                 }

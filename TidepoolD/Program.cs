@@ -3,7 +3,7 @@ Tidepool : a C compiler
  
 based on Fabrice Bellard's Tiny C compiler
 
-Copyright (C) 2020  George E Greaney
+Copyright (C) 2018-2020  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -35,6 +35,9 @@ namespace TidepoolD
             String sourcecode = "int main() { return 0; }";
             tp.compileCode(sourcecode);
             tp.outputFile("test.o");
+
+            //Parser parser = new Parser();
+            //parser.ParseCode("5+6-3+7");
         }
     }
 }
