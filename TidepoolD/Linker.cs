@@ -31,11 +31,12 @@ namespace TidepoolD
     public class Linker
     {
         public Tidepool tp;
-        public Section text_section;
+        public Section text_section;        // predefined sections */
         public Section data_section;
-        public Section bss_section;     // predefined sections */
+        public Section bss_section;         
         public Section common_section;
         public Section cur_text_section;    // current section where function code is generated */
+        public Section symtab_section;      // symbol sections */
 
         public Linker(Tidepool _tp)     //tccelf_new
         {
@@ -50,6 +51,24 @@ namespace TidepoolD
             bss_section = new Section(tp, ".bss", SectionType.SHT_NOBITS, SectionFlags.SHF_ALLOC | SectionFlags.SHF_WRITE);
             common_section = new Section(tp, ".common", SectionType.SHT_NOBITS, SectionFlags.SHF_PRIVATE);
             common_section.sh_num = (int)SectionNum.SHN_COMMON;
+        }
+
+        public int put_elf_str(Section s, String sym)
+        {
+            int len = sym.Length + 1;
+            int offset = s.data_offset;
+            int ptr = s.ptr_add(len);
+            foreach (Char c in sym)
+            {
+                s.data[ptr++] = (byte)c;
+            }
+            s.data[ptr] = 0;
+            return offset;
+        }
+
+        public int put_elf_sym(Section s, int value, int size, int info, int other, int shndx, String name)
+        {
+            return 0;
         }
 
         public void tp_output_elf(FileStream f, int phnum, ElfPhdr phdr, int file_offset, int[] sec_order)
@@ -130,7 +149,6 @@ namespace TidepoolD
             }
         }
 
-
         public int tp_write_elf_file(String filename, int phnum, ElfPhdr phdr, int file_offset, int[] sec_order)
         {
             FileStream f = File.OpenWrite(filename);
@@ -149,6 +167,10 @@ namespace TidepoolD
             int file_offset = 0;
             int[] sec_order = { 0, 1, 2, 3, 4, 5, 6 };
             ElfPhdr phdr = null;
+
+            // we add a section for symbols */
+            Section strsec = new Section(tp, ".shstrtab", SectionType.SHT_STRTAB, 0);
+            put_elf_str(strsec, "");
 
             file_offset = 0xb8;
 
@@ -184,14 +206,14 @@ namespace TidepoolD
         SHT_STRTAB = 3,		            /* String table */
         SHT_RELA = 4,		            /* Relocation entries with addends */
         SHT_HASH = 5,		            /* Symbol hash table */
-        SHT_DYNAMIC = 6,		            /* Dynamic linking information */
+        SHT_DYNAMIC = 6,		        /* Dynamic linking information */
         SHT_NOTE = 7,		            /* Notes */
         SHT_NOBITS = 8,		            /* Program space with no data (bss) */
-        SHT_REL = 9,		                /* Relocation entries, no addends */
+        SHT_REL = 9,		            /* Relocation entries, no addends */
         SHT_SHLIB = 10,		            /* Reserved */
-        SHT_DYNSYM = 11,		            /* Dynamic linker symbol table */
-        SHT_INIT_ARRAY = 14,		        /* Array of constructors */
-        SHT_FINI_ARRAY = 15,		        /* Array of destructors */
+        SHT_DYNSYM = 11,		        /* Dynamic linker symbol table */
+        SHT_INIT_ARRAY = 14,		    /* Array of constructors */
+        SHT_FINI_ARRAY = 15,		    /* Array of destructors */
         SHT_PREINIT_ARRAY = 16,		    /* Array of pre-constructors */
         SHT_GROUP = 17,		            /* Section group */
         SHT_SYMTAB_SHNDX = 18,		    /* Extended section indices */
@@ -274,6 +296,7 @@ namespace TidepoolD
             sh_type = _sh_type;
             sh_flags = _sh_flags;
 
+            //set alignment
             switch (sh_type)
             {
                 case SectionType.SHT_HASH:
@@ -312,6 +335,7 @@ namespace TidepoolD
             hash = null;            // hash table for symbols */
             prev = null;            // previous section on section stack */
 
+            //add the section to tidepool public/private list
             if ((sh_flags & SectionFlags.SHF_PRIVATE) != 0)
             {
                 tp.priv_sections.Add(this);
@@ -339,5 +363,32 @@ namespace TidepoolD
             this.data = data;
             this.data_allocated = size;
         }
+
+        public int add(int size, int align)
+        {
+            int offset = (data_offset + align - 1) & -align;
+            int offset1 = offset + size;
+            if (sh_type != SectionType.SHT_NOBITS && offset1 > data_allocated)
+                realloc(offset1);
+            data_offset = offset1;
+            if (align > sh_addralign)
+                sh_addralign = align;
+            return offset;
+        }
+
+        public int ptr_add(int size)
+        {
+            return add(size, 1);
+        }
+
+        public void reserve(int size)
+        {
+            if (size > data_allocated)
+                realloc(size);
+
+            if (size > data_offset)
+                data_offset = size;
+        }
+
     }
 }

@@ -90,6 +90,22 @@ namespace TidepoolD
 
         //- symbol management -------------------------------------------------
 
+        public void put_extern_sym2(Sym sym, int sh_num, int value, int size, bool can_add_underscore)
+    {
+        int info = 0;
+        int other = 0;
+        String name = null;
+
+        		sym.c = link.put_elf_sym(link.symtab_section, value, size, info, other, sh_num, name);
+
+    }
+
+        public void put_extern_sym(Sym sym, Section section, int value, int size)
+        {
+            int sh_num = (section != null) ? section.sh_num : (int)SectionNum.SHN_UNDEF;
+            put_extern_sym2(sym, sh_num, value, size, 1);
+        }
+
         public Sym sym_push2(List<Sym> ps, int v, ValueType t, int c)
         {
             Sym s;
@@ -104,10 +120,14 @@ namespace TidepoolD
             return s;
         }
 
-
         public Sym sym_find(int v)
         {
-            return null;
+            Sym s = null;
+            if (v < pp.table_ident.Count)
+            {
+                s = pp.table_ident[v].sym_identifier;
+            }
+            return s;
         }
 
         public Sym sym_push(int v, CType type, int r, int c)
@@ -155,7 +175,7 @@ namespace TidepoolD
             Sym s;
 
             s = sym_find(v);
-            if (s != null)
+            if (s == null)
             {
                 s = global_identifier_push(v, (type.t | ValueType.VT_EXTERN), 0);
                 s.type.reff = type.reff;
@@ -448,6 +468,11 @@ namespace TidepoolD
         {
             nocode_wanted = 0;
             ind = link.cur_text_section.data_offset;
+
+            put_extern_sym(sym, cur_text_section, ind, 0);
+            funcname = get_tok_str(sym->v, NULL);
+            func_ind = ind;
+
 
             local_scope = 1;                // for function parameters */
             i386.gfunc_prolog(sym.type);

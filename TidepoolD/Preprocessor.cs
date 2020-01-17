@@ -36,6 +36,7 @@ namespace TidepoolD
         public CValue tokc;
 
         public List<TokenSym> table_ident;
+        public Dictionary<String,TokenSym> hash_ident;
 
         //debugging
         int idx;
@@ -50,6 +51,8 @@ namespace TidepoolD
             tok = new Token();
             tokc = new CValue();
             idx = 0;
+            table_ident = new List<TokenSym>();
+            hash_ident = new Dictionary<string,TokenSym>();
         }
 
         //---------------------------------------------------------------------
@@ -66,6 +69,15 @@ namespace TidepoolD
             tp.tpError("%s expected", msg);
         }
 
+        public TokenSym tok_alloc_new(String str)
+        {
+            TokenSym ts = new TokenSym(str);
+            ts.tok = table_ident.Count;
+            table_ident.Add(ts);
+            hash_ident.Add(str, ts);
+            return ts;
+        }
+
         public String get_tok_str(Token tok)
         {
             return "token";
@@ -75,11 +87,12 @@ namespace TidepoolD
         {
             //set up for debugging
             tok.type = tokList[idx];
-            if (idx == 1)
+            if (idx == 1)               //'main'
             {
-                tok.num = 100;
+                TokenSym ts = tok_alloc_new("main");
+                tok.num = ts.tok;
             }
-            if (idx == 6)
+            if (idx == 6)               //69
             {
                 tokc.str = "69";
                 tokc.i = 69;
@@ -111,8 +124,19 @@ namespace TidepoolD
         public Sym sym_label;               /* direct pointer to label */
         public Sym sym_struct;              /* direct pointer to structure */
         public Sym sym_identifier;          /* direct pointer to identifier */
+
         public int tok;                     /* token number */
         public String str;
+
+        public TokenSym(String _str)
+        {
+            str = _str;
+            tok = 0;
+            sym_define = null;
+            sym_label = null;
+            sym_struct = null;
+            sym_identifier = null;
+        }
     }
 
     public class CType              // type definition */
