@@ -80,7 +80,12 @@ namespace TidepoolD
 
         public String get_tok_str(Token tok)
         {
-            return "token";
+            String s = null;
+            if (tok.type == TokenType.IDENT)
+            {
+                s = table_ident[tok.num].str;
+            }
+            return s;
         }
 
         public void next()

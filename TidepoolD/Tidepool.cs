@@ -34,14 +34,19 @@ namespace TidepoolD
         public Generator gen;
         public Linker link;
 
-        String outname;
+        public String outname;
 
         /* sections */
         public List<Section> sections;
-        //int nb_sections; /* number of sections, including first dummy section */
-
         public List<Section> priv_sections;
-        //int nb_priv_sections; /* number of private sections */
+
+        public Section got;                     // got & plt handling */
+        public Section plt;
+
+        public Section dynsymtab_section;       // temporary dynamic symbol sections (for dll loading) */
+        public Section dynsym;                  // exported dynamic symbol section */
+        public Section symtab;                  // copy of the global symtab_section variable */
+
 
         public Tidepool()
         {
@@ -87,7 +92,7 @@ namespace TidepoolD
             return result;
         }
 
-        public void outputFile(String outname)
+        public void outputFile(String outname)          //tcc_output_file
         {
             link.elf_output_file(outname);
         }

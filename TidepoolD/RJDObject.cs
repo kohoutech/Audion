@@ -151,6 +151,41 @@ namespace TidepoolD
             f.Write(data, 0, ElfShdrSize);
         }
     }
+
+    //-------------------------------------------------------------------------
+
+    public class ElfSym
+    {
+        public static int ElfSymSize = 0x10;
+
+        public int st_name;		    // Symbol name (string tbl index) */
+        public int st_value;		// Symbol value */
+        public int st_size;		    // Symbol size */
+        public int st_info;		    // Symbol type and binding */
+        public int st_other;		// Symbol visibility */
+        public int st_shndx;		// Section index */
+
+        public ElfSym(int _st_name, int _st_value, int _st_size, int _st_info, int _st_other, int _st_shndx)
+        {
+            st_name = _st_name;
+            st_value = _st_value;
+            st_size = _st_size;
+            st_info = _st_info;
+            st_other = _st_other;
+            _st_shndx = _st_shndx;
+        }
+
+        public void writeData(byte[] data, int offset)
+        {
+            Array.Copy(BitConverter.GetBytes(st_name), 0, data, 0x0, 4);
+            Array.Copy(BitConverter.GetBytes(st_value), 0, data, 0x4, 4);
+            Array.Copy(BitConverter.GetBytes(st_size), 0, data, 0x8, 4);
+            Array.Copy(BitConverter.GetBytes((byte)st_info), 0, data, 0xc, 1);
+            Array.Copy(BitConverter.GetBytes((byte)st_other), 0, data, 0xd, 1);
+            Array.Copy(BitConverter.GetBytes((short)st_shndx), 0, data, 0xe, 2);
+        }
+    }
+
     //-------------------------------------------------------------------------
 
     public class ElfPhdr

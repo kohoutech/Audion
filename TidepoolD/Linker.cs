@@ -33,10 +33,13 @@ namespace TidepoolD
         public Tidepool tp;
         public Section text_section;        // predefined sections */
         public Section data_section;
-        public Section bss_section;         
+        public Section bss_section;
         public Section common_section;
         public Section cur_text_section;    // current section where function code is generated */
+
         public Section symtab_section;      // symbol sections */
+        public Section stab_section;        // debug sections */
+        public Section stabstr_section;
 
         public Linker(Tidepool _tp)     //tccelf_new
         {
@@ -51,7 +54,24 @@ namespace TidepoolD
             bss_section = new Section(tp, ".bss", SectionType.SHT_NOBITS, SectionFlags.SHF_ALLOC | SectionFlags.SHF_WRITE);
             common_section = new Section(tp, ".common", SectionType.SHT_NOBITS, SectionFlags.SHF_PRIVATE);
             common_section.sh_num = (int)SectionNum.SHN_COMMON;
+
+            /* symbols are always generated for linking stage */
+            symtab_section = Section.new_symtab(this, ".symtab", SectionType.SHT_SYMTAB, 0, ".strtab", ".hashtab", SectionFlags.SHF_PRIVATE);
+            tp.symtab = symtab_section;
+
+            /* private symbol table for dynamic symbols */
+            tp.dynsymtab_section = Section.new_symtab(this, ".dynsymtab", SectionType.SHT_SYMTAB, SectionFlags.SHF_PRIVATE | SectionFlags.SHF_DYNSYM,
+                ".dynstrtab", ".dynhashtab", SectionFlags.SHF_PRIVATE);
+
+            //get_sym_attr(s, 0, 1);
         }
+
+        //tccelf_bounds_new
+        //tccelf_stab_new
+        //free_section
+        //tccelf_delete
+        //tccelf_begin_file
+        //tccelf_end_file
 
         public int put_elf_str(Section s, String sym)
         {
@@ -66,10 +86,70 @@ namespace TidepoolD
             return offset;
         }
 
+        //elf_hash
+        //rebuild_hash
+
         public int put_elf_sym(Section s, int value, int size, int info, int other, int shndx, String name)
         {
-            return 0;
+            int sym_index = s.ptr_add(ElfSym.ElfSymSize);
+            int name_offset = 0;
+            if (name != null && name.Length > 0)
+            {
+                name_offset = put_elf_str(s.link, name);
+            }
+            ElfSym sym = new ElfSym(name_offset, value, size, info, other, shndx);
+            sym.writeData(s.data, sym_index);
+            return sym_index;
         }
+
+        //find_elf_sym
+        //get_elf_sym_addr
+        //tcc_get_symbol
+        //tcc_get_symbol_err
+        //set_elf_sym
+
+        //put_elf_reloca
+        //put_elf_reloc
+        //squeeze_multi_relocs
+        //put_stabs
+        //put_stabs_r
+        //put_stabn
+        //put_stabd
+        //get_sym_attr
+        //sort_syms
+        //relocate_syms
+        //relocate_section
+        //relocate_rel
+        //prepare_dynamic_rel
+        //build_got
+        //put_got_entry
+        //build_got_entries
+        //put_dt
+        //add_init_array_defines
+        //tcc_add_support
+        //tcc_add_bcheck
+        //tcc_add_runtime
+        //tcc_add_linker_symbols
+        //resolve_common_syms
+        //tcc_output_binary
+        //fill_got_entry
+        //fill_got
+        //fill_local_got_entries
+        //bind_exe_dynsyms
+        //bind_libs_dynsyms
+        //export_global_syms
+
+        public int alloc_sec_names(Tidepool tp, int file_type, Section strsec)
+        {
+            int textrel = 0;
+            return textrel;
+        }
+
+        //layout_sections
+        //fill_unloadable_phdr
+        //fill_dynamic
+        //final_sections_reloc
+
 
         public void tp_output_elf(FileStream f, int phnum, ElfPhdr phdr, int file_offset, int[] sec_order)
         {
@@ -157,13 +237,15 @@ namespace TidepoolD
             return 0;
         }
 
+        //  tidy_section_headers
+
         public int elf_output_file(string outname)
         {
             int i;
             int ret;
             int phnum = 0;
             int shnum = 0;
-            int file_type;
+            int file_type = tp.output_type;
             int file_offset = 0;
             int[] sec_order = { 0, 1, 2, 3, 4, 5, 6 };
             ElfPhdr phdr = null;
@@ -172,12 +254,30 @@ namespace TidepoolD
             Section strsec = new Section(tp, ".shstrtab", SectionType.SHT_STRTAB, 0);
             put_elf_str(strsec, "");
 
+            // Allocate strings for section names */
+            int textrel = alloc_sec_names(tp, file_type, strsec);
+
+
             file_offset = 0xb8;
 
             // Create the ELF file with name 'outname' */
             ret = tp_write_elf_file(outname, phnum, phdr, file_offset, sec_order);
             return ret;
         }
+
+        //load_data
+        //tcc_object_type
+        //tcc_load_object_file
+        //get_be32
+        //get_be64
+        //tcc_load_alacarte
+        //tcc_load_archive
+        //tcc_load_dll
+        //ld_next
+        //ld_add_file
+        //new_undef_syms
+        //ld_add_file_list
+        //tcc_load_ldscript
     }
 
     //- section classes -------------------------------------------------------
@@ -347,6 +447,42 @@ namespace TidepoolD
             }
         }
 
+        public static Section new_symtab(Linker link, String symtab_name, SectionType sh_type, SectionFlags sh_flags,
+                                        String strtab_name, String hash_name, SectionFlags hash_sh_flags)
+        {
+            Section symtab;
+            Section strtab;
+            Section hash;
+            int ptr;
+            int nb_buckets;
+            Tidepool tp = link.tp;
+
+            symtab = new Section(tp, symtab_name, sh_type, sh_flags);
+            symtab.sh_entsize = ElfSym.ElfSymSize;
+
+            strtab = new Section(tp, strtab_name, SectionType.SHT_STRTAB, sh_flags);
+            link.put_elf_str(strtab, "");
+            symtab.link = strtab;
+            link.put_elf_sym(symtab, 0, 0, 0, 0, 0, null);
+
+            nb_buckets = 1;
+
+            hash = new Section(tp, hash_name, SectionType.SHT_HASH, hash_sh_flags);
+            hash.sh_entsize = 4;    //sizeof(int);
+            symtab.hash = hash;
+            hash.link = symtab;
+
+            ptr = hash.ptr_add((2 + nb_buckets + 1) * 4);
+            Array.Copy(BitConverter.GetBytes(nb_buckets), 0, hash.data, ptr, 4);
+            Array.Copy(BitConverter.GetBytes(1), 0, hash.data, ptr + 4, 4);
+            for (int i = 0; i < nb_buckets + 1; i++)
+            {
+                Array.Copy(BitConverter.GetBytes(0), 0, hash.data, ptr + ((2 + i) * 4), 4);
+            }
+            
+            return symtab;
+        }
+
         public void realloc(long new_size)
         {
             int size = this.data_allocated;
@@ -390,5 +526,6 @@ namespace TidepoolD
                 data_offset = size;
         }
 
+        //find_section
     }
 }
