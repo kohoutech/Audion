@@ -116,7 +116,21 @@ namespace TidepoolD
         //put_stabn
         //put_stabd
         //get_sym_attr
-        //sort_syms
+
+        public void sort_syms(Tidepool tp, Section s)
+        {
+            int nb_syms = s.data_offset / ElfSym.ElfSymSize;
+            ElfSym[] new_syms = new ElfSym[nb_syms];
+            int[] old_to_new_syms = new int[nb_syms];
+
+            int offset = 0;
+            for (int i = 0; i < nb_syms; i++)
+            {
+                new_syms[i] = ElfSym.readData(s.data, offset);
+                offset += ElfSym.ElfSymSize;
+            }
+        }
+
         //relocate_syms
         //relocate_section
         //relocate_rel
@@ -139,19 +153,55 @@ namespace TidepoolD
         //bind_libs_dynsyms
         //export_global_syms
 
-        public int alloc_sec_names(Tidepool tp, int file_type, Section strsec)
+        public int alloc_sec_names(OutputType file_type, Section strsec)
         {
             int textrel = 0;
+            for (int i = 1; i < tp.sections.Count; i++)
+            {
+                Section s = tp.sections[i];
+                s.sh_size = s.data_offset;
+                if (s.sh_size > 0 || ((s.sh_flags & SectionFlags.SHF_ALLOC) != 0))
+                {
+                    s.sh_name = put_elf_str(strsec, s.name);
+                }
+            }
+            strsec.sh_size = strsec.data_offset;
             return textrel;
         }
 
-        //layout_sections
+        public int layout_sections(ElfPhdr[] phdr, int phnum, Section interp, Section strsec, dyn_inf dyninf, int[] sec_order)
+        {
+            OutputType file_type = tp.output_type;
+            int sh_order_index = 1;
+            int file_offset = 0;
+            if (tp.output_format == OutputFormat.TP_OUTPUT_FORMAT_ELF)
+            {
+                file_offset = ElfEhdr.ElfEhdrSize + (phnum * ElfPhdr.ElfPhdrSize);
+            }
+
+            for (int i = 1; i < tp.sections.Count; i++)
+            {
+                Section s = tp.sections[i];
+                if (phnum > 0 && ((s.sh_flags & SectionFlags.SHF_ALLOC) != 0))
+                    continue;
+                sec_order[sh_order_index++] = i;
+
+                file_offset = (file_offset + s.sh_addralign - 1) & ~(s.sh_addralign - 1);
+                s.sh_offset = file_offset;
+                if (s.sh_type != SectionType.SHT_NOBITS)
+                    file_offset += s.sh_size;
+            }
+
+            return file_offset;
+
+            //return 0xb8;
+        }
+
         //fill_unloadable_phdr
         //fill_dynamic
         //final_sections_reloc
 
-
-        public void tp_output_elf(FileStream f, int phnum, ElfPhdr phdr, int file_offset, int[] sec_order)
+        public void tp_output_elf(FileStream f, int phnum, ElfPhdr[] phdr, int file_offset, int[] sec_order)
         {
             int size;
             int file_type;
@@ -160,7 +210,7 @@ namespace TidepoolD
 
             file_offset = (file_offset + 3) & -4;       /* align to 4 */
 
-            /* fill header */
+            // fill ELF header & write it out
             ElfEhdr ehdr = new ElfEhdr();
             ehdr.e_ident[0] = ElfEhdr.ELFMAG0;
             ehdr.e_ident[1] = ElfEhdr.ELFMAG1;
@@ -182,6 +232,9 @@ namespace TidepoolD
             ehdr.writeOut(f);
             int offset = ElfEhdr.ElfEhdrSize + phnum * ElfPhdr.ElfPhdrSize;
 
+            sort_syms(tp, symtab_section);
+
+            //write out section data
             for (int i = 1; i < tp.sections.Count; i++)
             {
                 Section s = tp.sections[sec_order[i]];
@@ -199,18 +252,20 @@ namespace TidepoolD
                 }
             }
 
+            //pad out last section
             while (offset < ehdr.e_shoff)
             {
                 f.WriteByte(0);
                 offset++;
             }
 
+            //write out section tbl
             for (int i = 0; i < tp.sections.Count; i++)
             {
                 ElfShdr sh = new ElfShdr();
 
                 Section s = tp.sections[i];
-                if (s != null)
+                if (s != null && s.sh_type != SectionType.SHT_NULL)
                 {
                     sh.sh_name = s.sh_name;
                     sh.sh_type = s.sh_type;
@@ -225,11 +280,10 @@ namespace TidepoolD
                     sh.sh_size = s.sh_size;
                 }
                 sh.writeOut(f);
-
             }
         }
 
-        public int tp_write_elf_file(String filename, int phnum, ElfPhdr phdr, int file_offset, int[] sec_order)
+        public int tp_write_elf_file(String filename, int phnum, ElfPhdr[] phdr, int file_offset, int[] sec_order)
         {
             FileStream f = File.OpenWrite(filename);
             tp_output_elf(f, phnum, phdr, file_offset, sec_order);
@@ -245,24 +299,50 @@ namespace TidepoolD
             int ret;
             int phnum = 0;
             int shnum = 0;
-            int file_type = tp.output_type;
+            OutputType file_type = tp.output_type;
             int file_offset = 0;
-            int[] sec_order = { 0, 1, 2, 3, 4, 5, 6 };
-            ElfPhdr phdr = null;
+            int[] sec_order = null;
+            dyn_inf dyninf = null;
+            ElfPhdr[] phdr = null;
+            Section interp = null;
 
             // we add a section for symbols */
             Section strsec = new Section(tp, ".shstrtab", SectionType.SHT_STRTAB, 0);
             put_elf_str(strsec, "");
 
             // Allocate strings for section names */
-            int textrel = alloc_sec_names(tp, file_type, strsec);
+            int textrel = alloc_sec_names(file_type, strsec);
 
+            // compute number of program headers */
+            if (file_type == OutputType.TP_OUTPUT_OBJ)
+                phnum = 0;
+            else if (file_type == OutputType.TP_OUTPUT_DLL)
+                phnum = 3;
+            else if (tp.static_link)
+                phnum = 2;
+            else
+                phnum = 5;
 
-            file_offset = 0xb8;
+            /* allocate program segment headers */
+            phdr = new ElfPhdr[phnum];
+
+            /* compute number of sections */
+            shnum = tp.sections.Count;
+
+            /* this array is used to reorder sections in the output file */
+            sec_order = new int[shnum];
+            sec_order[0] = 0;
+
+            file_offset = layout_sections(phdr, phnum, interp, strsec, dyninf, sec_order);
 
             // Create the ELF file with name 'outname' */
             ret = tp_write_elf_file(outname, phnum, phdr, file_offset, sec_order);
             return ret;
+        }
+
+        public void outputFile(String outname)          //tcc_output_file
+        {
+            elf_output_file(outname);
         }
 
         //load_data
@@ -278,6 +358,22 @@ namespace TidepoolD
         //new_undef_syms
         //ld_add_file_list
         //tcc_load_ldscript
+    }
+
+    public enum OutputType
+    {
+        TP_OUTPUT_MEMORY = 1,           // output will be run in memory (default) */
+        TP_OUTPUT_EXE = 2,              // executable file */
+        TP_OUTPUT_DLL = 3,              // dynamic library */
+        TP_OUTPUT_OBJ = 4,              // object file */
+        TP_OUTPUT_PREPROCESS = 5        // only preprocess (used internally) */
+    }
+
+    public enum OutputFormat
+    {
+        TP_OUTPUT_FORMAT_ELF = 0,       // default output format: ELF */
+        TP_OUTPUT_FORMAT_BINARY = 1,    // binary image output */
+        TP_OUTPUT_FORMAT_COFF = 2       // COFF */
     }
 
     //- section classes -------------------------------------------------------
@@ -399,6 +495,9 @@ namespace TidepoolD
             //set alignment
             switch (sh_type)
             {
+                case SectionType.SHT_NULL:      //unused section header
+                    sh_addralign = 0;
+                    break;
                 case SectionType.SHT_HASH:
                 case SectionType.SHT_REL:
                 case SectionType.SHT_RELA:
@@ -479,7 +578,7 @@ namespace TidepoolD
             {
                 Array.Copy(BitConverter.GetBytes(0), 0, hash.data, ptr + ((2 + i) * 4), 4);
             }
-            
+
             return symtab;
         }
 
@@ -527,5 +626,15 @@ namespace TidepoolD
         }
 
         //find_section
+    }
+
+    // Info to be copied in dynamic section */
+    public class dyn_inf
+    {
+        public Section dynamic;
+        public Section dynstr;
+        public int data_offset;
+        public int rel_addr;
+        public int rel_size;
     }
 }

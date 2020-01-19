@@ -77,11 +77,57 @@ namespace TidepoolD
             __vstack = new SValue[VSTACK_SIZE + 1];
         }
 
+        //is_float
+        //ieee_finite
+        //test_lvalue
+        //check_vstack
+        //pv
+
+        public void tcc_debug_start(Tidepool tp)
+        {
+            if (tp.do_debug)
+            {
+            }
+
+            /* an elf symbol of type STT_FILE must be put so that STB_LOCAL symbols can be safely used */
+            link.put_elf_sym(link.symtab_section, 0, 0, ElfSym.ST_INFO(SymbolBind.STB_LOCAL, SymbolType.STT_FILE), 
+                0, (int)SectionNum.SHN_ABS, pp.file.filename);
+        }
+
+        public void tcc_debug_end(Tidepool tp)
+        {
+            if (!tp.do_debug)
+                return;
+        }
+
+        public void tcc_debug_line(Tidepool tp)
+        {
+            if (!tp.do_debug)
+                return;
+        }
+
+        public void tcc_debug_funcstart(Tidepool tp, Sym sym)
+        {
+            if (!tp.do_debug)
+                return;
+        }
+
+        public void tcc_debug_funcend(Tidepool tp, int size)
+        {
+            if (!tp.do_debug)
+                return;
+        }
+
         //---------------------------------------------------------------------
 
         public int tpgen_compile()      //tccgen_compile
         {
             link.cur_text_section = null;
+            funcname = "";
+            nocode_wanted = 0x80000000;
+
+            tcc_debug_start(tp);
+
             pp.next();
             decl(ValueType.VT_CONST);
 
@@ -470,7 +516,7 @@ namespace TidepoolD
             ind = link.cur_text_section.data_offset;
 
             put_extern_sym(sym, link.cur_text_section, ind, 0);
-            funcname = pp.table_ident[sym.v].str;            
+            funcname = pp.table_ident[sym.v].str;
             func_ind = ind;
 
             local_scope = 1;                // for function parameters */
@@ -700,6 +746,12 @@ namespace TidepoolD
             }
         }
 
+        public void gen_le16(uint v)
+        {
+            g(v);
+            g(v >> 8);
+        }
+
         public void gen_le32(uint c)
         {
             g(c);
@@ -708,12 +760,19 @@ namespace TidepoolD
             g(c >> 24);
         }
 
+        //gsym_addr
+        //gsym
+        //oad
+
         public void gen_addr32(int r, Sym sym, int c)
         {
             //if (r & VT_SYM)
             //    greloc(cur_text_section, sym, ind, R_386_32);
             gen_le32((uint)c);
         }
+
+        //gen_addrpc32
+        //gen_modrm
 
         public void load(int r, SValue sv)
         {
@@ -736,6 +795,13 @@ namespace TidepoolD
                 }
             }
         }
+
+        //store
+        //gadd_sp
+        //gen_static_call
+        //gcall_or_jmp
+        //gfunc_sret
+        //gfunc_call
 
         public void gfunc_prolog(CType func_type)
         {
@@ -764,8 +830,26 @@ namespace TidepoolD
             o(0xe58955);                    /* push %ebp, mov %esp, %ebp */
             o(0xec81);                      /* sub esp, stacksize */
             gen_le32(v);
+            o(0x90);                        /* adjust to FUNC_PROLOG_SIZE */
 
             gen.ind = saved_ind;
         }
+
+        //gjmp
+        //gjmp_addr
+        //gtst_addr
+        //gtst
+        //gen_opi
+        //gen_opf
+        //gen_cvt_itof
+        //gen_cvt_ftoi
+        //gen_cvt_ftof
+        //ggoto
+        //gen_bounded_ptr_add
+        //gen_bounded_ptr_deref
+        //gen_vla_sp_save
+        //gen_vla_sp_restore
+        //gen_vla_alloc
+
     }
 }

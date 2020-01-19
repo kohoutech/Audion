@@ -48,11 +48,14 @@ namespace TidepoolD
         public Preprocessor(Tidepool _tp)
         {
             tp = _tp;
+            file = null;
             tok = new Token();
             tokc = new CValue();
-            idx = 0;
+
             table_ident = new List<TokenSym>();
             hash_ident = new Dictionary<string,TokenSym>();
+
+            idx = 0;
         }
 
         //---------------------------------------------------------------------
@@ -110,6 +113,9 @@ namespace TidepoolD
 
     public class BufferedFile
     {
+        public const int IO_BUF_SIZE = 8192;
+
+        public String filename;
         public char[] buffer;
     }
 

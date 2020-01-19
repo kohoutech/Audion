@@ -29,12 +29,14 @@ namespace TidepoolD
 {
     class Program
     {
+        //test driver
         static void Main(string[] args)
         {
             Tidepool tp = new Tidepool();
             String sourcecode = "int main() { return 0; }";
             tp.compileCode(sourcecode);
-            tp.outputFile("test.o");
+            tp.link.outputFile("test.o");
+            Console.Out.WriteLine("done.");
 
             //Parser parser = new Parser();
             //parser.ParseCode("5+6-3+7");

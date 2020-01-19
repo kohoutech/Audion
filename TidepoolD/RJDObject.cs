@@ -34,6 +34,7 @@ namespace TidepoolD
 
     //-------------------------------------------------------------------------
 
+    // The ELF file header.  This appears at the start of every ELF file.  */
     public class ElfEhdr
     {
         int EI_NIDENT = 16;
@@ -118,7 +119,8 @@ namespace TidepoolD
 
     //-------------------------------------------------------------------------
 
-    public class ElfShdr
+    // Section header.  */
+    public class ElfShdr        
     {
         public static int ElfShdrSize = 0x28;
 
@@ -154,7 +156,8 @@ namespace TidepoolD
 
     //-------------------------------------------------------------------------
 
-    public class ElfSym
+    // Symbol table entry.  */
+    public class ElfSym     
     {
         public static int ElfSymSize = 0x10;
 
@@ -164,6 +167,11 @@ namespace TidepoolD
         public int st_info;		    // Symbol type and binding */
         public int st_other;		// Symbol visibility */
         public int st_shndx;		// Section index */
+
+        public static int ST_INFO(SymbolBind bind, SymbolType type)	
+        {
+            return (((int)bind << 4) + ((int)type & 0xf));
+        }
 
         public ElfSym(int _st_name, int _st_value, int _st_size, int _st_info, int _st_other, int _st_shndx)
         {
@@ -175,6 +183,19 @@ namespace TidepoolD
             _st_shndx = _st_shndx;
         }
 
+        public static ElfSym readData(byte[] data, int offset)
+        {
+            int _st_name = BitConverter.ToInt32(data, offset);
+            int _st_value = BitConverter.ToInt32(data, offset + 0x4);
+            int _st_size = BitConverter.ToInt32(data, offset + 0x8);
+            int _st_info = data[offset + 0xc];
+            int _st_other = data[offset + 0xc];
+            int _st_shndx = BitConverter.ToInt16(data, offset + 0xe);
+
+            ElfSym sym = new ElfSym(_st_name, _st_value, _st_size, _st_info, _st_other, _st_shndx);
+            return sym;
+        }
+
         public void writeData(byte[] data, int offset)
         {
             Array.Copy(BitConverter.GetBytes(st_name), 0, data, 0x0, 4);
@@ -184,10 +205,44 @@ namespace TidepoolD
             Array.Copy(BitConverter.GetBytes((byte)st_other), 0, data, 0xd, 1);
             Array.Copy(BitConverter.GetBytes((short)st_shndx), 0, data, 0xe, 2);
         }
+
+    }
+
+    // Legal values for ST_BIND subfield of st_info (symbol binding).  */
+    public enum SymbolBind
+    {
+        STB_LOCAL = 0,		    // Local symbol */
+        STB_GLOBAL = 1,		    // Global symbol */
+        STB_WEAK = 2,		    // Weak symbol */
+        STB_NUM = 3,		    // Number of defined types.  */
+        STB_LOOS = 10,		    // Start of OS-specific */
+        STB_GNU_UNIQUE = 10,	// Unique symbol.  */
+        STB_HIOS = 12,		    // End of OS-specific */
+        STB_LOPROC = 13,		// Start of processor-specific */
+        STB_HIPROC = 15		    // End of processor-specific */
+    }
+
+    // Legal values for ST_TYPE subfield of st_info (symbol type).  */
+    public enum SymbolType
+    {
+        STT_NOTYPE = 0,		    // Symbol type is unspecified */
+        STT_OBJECT = 1,		    // Symbol is a data object */
+        STT_FUNC = 2,		    // Symbol is a code object */
+        STT_SECTION = 3,		// Symbol associated with a section */
+        STT_FILE = 4,		    // Symbol's name is file name */
+        STT_COMMON = 5,		    // Symbol is a common data object */
+        STT_TLS = 6,		    // Symbol is thread-local data object*/
+        STT_NUM = 7,		    // Number of defined types.  */
+        STT_LOOS = 10,		    // Start of OS-specific */
+        STT_GNU_IFUNC = 10,		// Symbol is indirect code object */
+        STT_HIOS = 12,		    // End of OS-specific */
+        STT_LOPROC = 13,		// Start of processor-specific */
+        STT_HIPROC = 15,		// End of processor-specific */
     }
 
     //-------------------------------------------------------------------------
 
+    // Program segment header.  */
     public class ElfPhdr
     {
         public static int ElfPhdrSize = 0x20;
