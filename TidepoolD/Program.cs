@@ -24,6 +24,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.IO;
 
 namespace TidepoolD
 {
@@ -33,7 +34,7 @@ namespace TidepoolD
         static void Main(string[] args)
         {
             Tidepool tp = new Tidepool();
-            String sourcecode = "int main() { return 0; }";
+            String sourcecode = File.ReadAllText("test.c");
             tp.compileCode(sourcecode);
             tp.link.outputFile("test.o");
             Console.Out.WriteLine("done.");

@@ -121,6 +121,7 @@ namespace TidepoolD
         {
             int nb_syms = s.data_offset / ElfSym.ElfSymSize;
             ElfSym[] new_syms = new ElfSym[nb_syms];
+            byte[] sorted_data = new byte[s.data_offset];
             int[] old_to_new_syms = new int[nb_syms];
 
             int offset = 0;
@@ -129,6 +130,35 @@ namespace TidepoolD
                 new_syms[i] = ElfSym.readData(s.data, offset);
                 offset += ElfSym.ElfSymSize;
             }
+
+            // first pass for local symbols */
+            offset = 0;
+            int loc_count = 0;
+            for (int i = 0; i < nb_syms; i++)
+            {
+                if (ElfSym.ST_BIND(new_syms[i].st_info) == SymbolBind.STB_LOCAL)
+                {
+                    new_syms[i].writeData(sorted_data, offset);
+                    offset += ElfSym.ElfSymSize;
+                    loc_count++;
+                }
+            }
+
+            // save the number of local symbols in section header */
+            if (s.sh_size > 0)
+                s.sh_info = loc_count;
+
+            // then second pass for non local symbols */
+            for (int i = 0; i < nb_syms; i++)
+            {
+                if (ElfSym.ST_BIND(new_syms[i].st_info) != SymbolBind.STB_LOCAL)
+                {
+                    new_syms[i].writeData(sorted_data, offset);
+                    offset += ElfSym.ElfSymSize;
+                }
+            }
+
+            s.data = sorted_data;
         }
 
         //relocate_syms

@@ -90,7 +90,7 @@ namespace TidepoolD
             }
 
             /* an elf symbol of type STT_FILE must be put so that STB_LOCAL symbols can be safely used */
-            link.put_elf_sym(link.symtab_section, 0, 0, ElfSym.ST_INFO(SymbolBind.STB_LOCAL, SymbolType.STT_FILE), 
+            link.put_elf_sym(link.symtab_section, 0, 0, ElfSym.ST_INFO(SymbolBind.STB_LOCAL, SymbolType.STT_FILE),
                 0, (int)SectionNum.SHN_ABS, pp.file.filename);
         }
 
@@ -138,12 +138,37 @@ namespace TidepoolD
 
         public void put_extern_sym2(Sym sym, int sh_num, int value, int size, bool can_add_underscore)
         {
-            int info = 0;
-            int other = 0;
+            SymbolType sym_type;
+            SymbolBind sym_bind;
             String name = pp.table_ident[sym.v].str;
+            ValueType t = sym.type.t;
+            if ((t & ValueType.VT_BTYPE) == ValueType.VT_FUNC)
+            {
+                sym_type = SymbolType.STT_FUNC;
+            }
+            else
+            {
+                sym_type = SymbolType.STT_OBJECT;
+            }
+            if ((t & ValueType.VT_STATIC) != 0)
+                sym_bind = SymbolBind.STB_LOCAL;
+            else
+                sym_bind = SymbolBind.STB_GLOBAL;
+            int other = 0;
+            int info = ElfSym.ST_INFO(sym_bind, sym_type);
 
             sym.c = link.put_elf_sym(link.symtab_section, value, size, info, other, sh_num, name);
 
+        }
+
+        public ElfSym elfsym(Sym s)
+        {
+            if ((s == null) || (s.c == 0))
+            {
+                return null;
+            }
+            ElfSym esym = ElfSym.readData(link.symtab_section.data, (s.c));
+            return esym;
         }
 
         public void put_extern_sym(Sym sym, Section section, int value, int size)
@@ -529,6 +554,16 @@ namespace TidepoolD
             i386.gfunc_epilog();
             link.cur_text_section.data_offset = ind;
 
+            // patch symbol size */
+            int func_size = ind - func_ind;
+            ElfSym esym = elfsym(sym);
+            esym.st_size = func_size;
+            esym.writeData(link.symtab_section.data, sym.c);
+            tcc_debug_funcend(tp, func_size);
+
+            // It's better to crash than to generate wrong code */
+            link.cur_text_section = null;
+            funcname = "";
 
             nocode_wanted = 0x80000000;
         }

@@ -29,35 +29,42 @@ namespace TidepoolD
     {
         List<string> asmcode;
 
-        public void ParseCode(String sourcecode) {
+        public int ParseCode(String sourcecode) {
 
             int pos = 0;
             asmcode = new List<string>();
-            asmcode.Add(".intel_syntax noprefix\n");
-            asmcode.Add(".global main\n");
-            asmcode.Add("main:\n");
-            asmcode.Add("  mov rax, %ld\n", (sourcecode[pos] - '0'));
+            asmcode.Add(".intel_syntax noprefix");
+            asmcode.Add(".global main");
+            asmcode.Add("main:");
+            asmcode.Add("  mov rax, " + (sourcecode[pos++] - '0'));
 
-            while (*p)
+            while (pos < sourcecode.Length)
             {
                 if (sourcecode[pos] == '+')
                 {
                     pos++;
-                    asmcode.Add("  add rax, {0}\n", (sourcecode[pos] - '0'));
+                    asmcode.Add("  add rax, " + (sourcecode[pos++] - '0'));
                     continue;
                 }
 
                 if (sourcecode[pos] == '-')
                 {
                     pos++;
-                    asmcode.Add("  sub rax, {0}\n", (sourcecode[pos] - '0'));
+                    asmcode.Add("  sub rax, " + (sourcecode[pos++] - '0'));
                     continue;
                 }
 
-                Console.Out.WriteLine("unexpected character: {0}\n", sourcecode[pos]);
+                Console.Out.WriteLine("unexpected character: {0}", sourcecode[pos]);
+                return 1;
             }
 
-            asmcode.Add("  ret\n");            
+            asmcode.Add("  ret\n");
+
+            foreach (String s in asmcode)
+            {
+                Console.Out.WriteLine(s);
+            }
+            return 0;
         }
     }
 }

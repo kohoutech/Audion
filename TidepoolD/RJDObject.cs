@@ -168,6 +168,11 @@ namespace TidepoolD
         public int st_other;		// Symbol visibility */
         public int st_shndx;		// Section index */
 
+        public static SymbolBind ST_BIND(int info)
+        {
+            return (SymbolBind) (info >> 4);
+        }
+
         public static int ST_INFO(SymbolBind bind, SymbolType type)	
         {
             return (((int)bind << 4) + ((int)type & 0xf));
@@ -180,7 +185,7 @@ namespace TidepoolD
             st_size = _st_size;
             st_info = _st_info;
             st_other = _st_other;
-            _st_shndx = _st_shndx;
+            st_shndx = _st_shndx;
         }
 
         public static ElfSym readData(byte[] data, int offset)
@@ -189,7 +194,7 @@ namespace TidepoolD
             int _st_value = BitConverter.ToInt32(data, offset + 0x4);
             int _st_size = BitConverter.ToInt32(data, offset + 0x8);
             int _st_info = data[offset + 0xc];
-            int _st_other = data[offset + 0xc];
+            int _st_other = data[offset + 0xd];
             int _st_shndx = BitConverter.ToInt16(data, offset + 0xe);
 
             ElfSym sym = new ElfSym(_st_name, _st_value, _st_size, _st_info, _st_other, _st_shndx);
@@ -198,12 +203,12 @@ namespace TidepoolD
 
         public void writeData(byte[] data, int offset)
         {
-            Array.Copy(BitConverter.GetBytes(st_name), 0, data, 0x0, 4);
-            Array.Copy(BitConverter.GetBytes(st_value), 0, data, 0x4, 4);
-            Array.Copy(BitConverter.GetBytes(st_size), 0, data, 0x8, 4);
-            Array.Copy(BitConverter.GetBytes((byte)st_info), 0, data, 0xc, 1);
-            Array.Copy(BitConverter.GetBytes((byte)st_other), 0, data, 0xd, 1);
-            Array.Copy(BitConverter.GetBytes((short)st_shndx), 0, data, 0xe, 2);
+            Array.Copy(BitConverter.GetBytes(st_name), 0, data, offset, 4);
+            Array.Copy(BitConverter.GetBytes(st_value), 0, data, offset+0x4, 4);
+            Array.Copy(BitConverter.GetBytes(st_size), 0, data, offset+0x8, 4);
+            data[offset + 0x0c] = (byte)st_info;
+            data[offset + 0x0d] = (byte)st_other;
+            Array.Copy(BitConverter.GetBytes((short)st_shndx), 0, data, offset+0xe, 2);
         }
 
     }
