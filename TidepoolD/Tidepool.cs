@@ -175,6 +175,7 @@ namespace TidepoolD
 
         public int compileCode(String str)          //tcc_compile_string
         {
+            str = str + '\0';                               //add null to end of string to mark end for scanner
             tpOpenBuf("<string>", str.Length);
             str.ToCharArray().CopyTo(pp.file.buffer, 0);
             int result = tpCompile();

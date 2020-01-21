@@ -30,11 +30,13 @@ namespace TidepoolD
 {
     class Program
     {
+        const string sourceName = "test.c";
+
         //test driver
         static void Main(string[] args)
         {
             Tidepool tp = new Tidepool();
-            String sourcecode = File.ReadAllText("test.c");
+            String sourcecode = File.ReadAllText(sourceName);
             tp.compileCode(sourcecode);
             tp.link.outputFile("test.o");
             Console.Out.WriteLine("done.");

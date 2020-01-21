@@ -32,30 +32,117 @@ namespace TidepoolD
         public Tidepool tp;
 
         public BufferedFile file;
-        public Token tok;
-        public CValue tokc;
+        public Token tok;               //the current token
+        public CValue tokc;             //the current const value
+        String tokcstr;                 //const string
 
         public List<TokenSym> table_ident;
         public Dictionary<String, TokenSym> hash_ident;
 
+        public int[] isidnum_table;
+
+        public Dictionary<String, TokenType> tp_keywords;       
+
+
         //debugging
-        int idx;
-        TokenType[] tokList = { TokenType.INT, TokenType.IDENT, TokenType.LPAREN, TokenType.RPAREN, TokenType.LBRACE,
-                                  TokenType.RETURN, TokenType.INTCONST, TokenType.SEMICOLON,
-                                  TokenType.RBRACE, TokenType.EOF};
+        //int idx;
+        //TokenType[] tokList = { TokenType.INT, TokenType.IDENT, TokenType.LPAREN, TokenType.RPAREN, TokenType.LBRACE,
+        //                          TokenType.RETURN, TokenType.INTCONST, TokenType.SEMICOLON,
+        //                          TokenType.RBRACE, TokenType.EOF};
 
         //cons
         public Preprocessor(Tidepool _tp)
         {
             tp = _tp;
             file = null;
-            tok = new Token();
-            tokc = new CValue();
+            tok = null;
+            tokc = null;
+            tokcstr = "";
 
             table_ident = new List<TokenSym>();
             hash_ident = new Dictionary<string, TokenSym>();
 
-            idx = 0;
+            // init isid table */
+            isidnum_table = new int[256];
+            for (int i = 0; i < 128; i++)
+            {
+                set_idnum(i, is_space(i) ? IS_SPC : isid(i) ? IS_ID : isnum(i) ? IS_NUM : 0);
+            }
+
+            for (int i = 128; i < 256; i++)
+            {
+                set_idnum(i, IS_ID);
+            }
+
+            //init keyword dict
+            tp_keywords = new Dictionary<string, TokenType>() { 
+                { "auto", TokenType.AUTO },
+                { "BREAK", TokenType.BREAK },
+                { "case", TokenType.CASE},
+                { "char", TokenType.CHAR},
+                { "const", TokenType.CONST},
+                { "continue", TokenType.CONTINUE},
+                { "default", TokenType.DEFAULT},
+                { "do", TokenType.DO},
+                { "double", TokenType.DOUBLE},
+                { "else", TokenType.ELSE},
+                { "enum", TokenType.ENUM},
+                { "extern", TokenType.EXTERN},
+                { "float", TokenType.FLOAT},
+                { "for", TokenType.FOR},
+                { "goto", TokenType.GOTO},
+                { "if", TokenType.IF},
+                { "inline", TokenType.INLINE},
+                { "int", TokenType.INT},
+                { "long", TokenType.LONG},
+                { "register", TokenType.REGISTER},
+                { "restrict", TokenType.RESTRICT},
+                { "return", TokenType.RETURN},
+                { "short", TokenType.SHORT},
+                { "signed", TokenType.SIGNED},
+                { "sizeof", TokenType.SIZEOF},
+                { "static", TokenType.STATIC},
+                { "struct", TokenType.STRUCT},
+                { "switch", TokenType.SWITCH},
+                { "typedef", TokenType.TYPEDEF},
+                { "union", TokenType.UNION},
+                { "unsigned", TokenType.UNSIGNED},
+                { "void", TokenType.VOID},
+                { "volatile", TokenType.VOLATILE},
+                { "while", TokenType.WHILE}};
+
+            //  idx = 0;
+        }
+
+        //* isidnum_table flags: */
+        const int IS_SPC = 1;
+        const int IS_ID = 2;
+        const int IS_NUM = 4;
+
+        // space excluding newline */
+        public bool is_space(int ch)
+        {
+            return ch == ' ' || ch == '\t' || ch == '\v' || ch == '\f' || ch == '\r';
+        }
+
+        public bool isid(int c)
+        {
+            return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
+        }
+
+        public bool isnum(int c)
+        {
+            return c >= '0' && c <= '9';
+        }
+
+        public bool isoct(int c)
+        {
+            return c >= '0' && c <= '7';
+        }
+
+        public char toup(char c)
+        {
+            return (c >= 'a' && c <= 'z') ? (char)((int)c - (int)'a' + (int)'A') : c;
         }
 
         //---------------------------------------------------------------------
@@ -86,17 +173,22 @@ namespace TidepoolD
         //cstr_reset
         //add_char
 
-
         public TokenSym tok_alloc_new(String str)
         {
             TokenSym ts = new TokenSym(str);
-            ts.tok = table_ident.Count;
+            ts.tok = table_ident.Count;             //set token num
             table_ident.Add(ts);
             hash_ident.Add(str, ts);
             return ts;
         }
 
-        //  tok_alloc
+        public TokenSym tok_alloc(String str)
+        {
+            if (hash_ident.ContainsKey(str)) {
+                return hash_ident[str];
+            }
+            return tok_alloc_new(str);
+        }
 
         public String get_tok_str(Token tok)
         {
@@ -116,7 +208,14 @@ namespace TidepoolD
         //minp
         //parse_line_comment
         //parse_comment
-        //set_idnum
+
+        public int set_idnum(int c, int val)
+        {
+            int prev = isidnum_table[c];
+            isidnum_table[c] = val;
+            return prev;
+        }
+
         //skip_spaces
         //check_space
         //parse_pp_string
@@ -149,107 +248,204 @@ namespace TidepoolD
         //pragma_parse
         //preprocess
         //parse_escape_string
-        //parse_string
+
+        public void parse_string(String s)
+        {
+        }
+
         //bn_lshift
         //bn_zero
-        //parse_number
-        
+
+        public void parse_number(String s)
+        {
+            ulong bass = 10;
+            ulong val = 0;
+            int pos = 0;
+            while (pos < s.Length)
+            {
+                char c = s[pos++];
+                val = (val * bass) + (ulong)(c - '0');
+            } 
+
+            tok = new Token(TokenType.INTCONST);
+            tokc = new CValue();
+            tokc.i = val;
+        }
+
         public void next_nomacro1()
         {
             int p = file.buf_ptr;
             char c = file.buffer[p];
-            switch (c)
+            bool done;
+            do
             {
-                case 'a':
-                case 'b':
-                case 'c':
-                case 'd':
-                case 'e':
-                case 'f':
-                case 'g':
-                case 'h':
-                case 'i':
-                case 'j':
-                case 'k':
-                case 'l':
-                case 'm':
-                case 'n':
-                case 'o':
-                case 'p':
-                case 'q':
-                case 'r':
-                case 's':
-                case 't':
-                case 'u':
-                case 'v':
-                case 'w':
-                case 'x':
-                case 'y':
-                case 'z':
-                case 'A':
-                case 'B':
-                case 'C':
-                case 'D':
-                case 'E':
-                case 'F':
-                case 'G':
-                case 'H':
-                case 'I':
-                case 'J':
-                case 'K':
-                case 'M':
-                case 'N':
-                case 'O':
-                case 'P':
-                case 'Q':
-                case 'R':
-                case 'S':
-                case 'T':
-                case 'U':
-                case 'V':
-                case 'W':
-                case 'X':
-                case 'Y':
-                case 'Z':
-                case '_':
-                    break;
+                done = true;            //assume we'll find a token in this pass
+                switch (c)
+                {
+                    case ' ':
+                    case '\t':
+                        p++;
+                        c = file.buffer[p];
+                        while ((isidnum_table[c] & IS_SPC) != 0)
+                        {
+                            p++;
+                            c = file.buffer[p];
+                        }
+                        done = false;
+                        break;
 
-                case '0':
-                case '1':
-                case '2':
-                case '3':
-                case '4':
-                case '5':
-                case '6':
-                case '7':
-                case '8':
-                case '9':
-                    break;
-                case '(':
-                    tok.type = TokenType.LPAREN;
-                    p++;
-                    break;
-                case ')':
-                    tok.type = TokenType.RPAREN;
-                    p++;
-                    break;
-                case '{':
-                    tok.type = TokenType.LBRACE;
-                    p++;
-                    break;
-                case '}':
-                    tok.type = TokenType.RBRACE;
-                    p++;
-                    break;
-                case ';':
-                    tok.type = TokenType.SEMICOLON;
-                    p++;
-                    break;
-                default:
-                    tp.tpError("unrecognized character {0}", c);
-                    break;
+                    case '\f':
+                    case '\v':
+                    case '\r':
+                        p++;
+                        c = file.buffer[p];
+                        done = false;
+                        break;
 
-            }
+                    case '\n':
+                        file.line_num++;
+                        p++;
+                        c = file.buffer[p];
+                        done = false;
+                        break;
+
+                    case 'a':
+                    case 'b':
+                    case 'c':
+                    case 'd':
+                    case 'e':
+                    case 'f':
+                    case 'g':
+                    case 'h':
+                    case 'i':
+                    case 'j':
+                    case 'k':
+                    case 'l':
+                    case 'm':
+                    case 'n':
+                    case 'o':
+                    case 'p':
+                    case 'q':
+                    case 'r':
+                    case 's':
+                    case 't':
+                    case 'u':
+                    case 'v':
+                    case 'w':
+                    case 'x':
+                    case 'y':
+                    case 'z':
+                    case 'A':
+                    case 'B':
+                    case 'C':
+                    case 'D':
+                    case 'E':
+                    case 'F':
+                    case 'G':
+                    case 'H':
+                    case 'I':
+                    case 'J':
+                    case 'K':
+                    case 'M':
+                    case 'N':
+                    case 'O':
+                    case 'P':
+                    case 'Q':
+                    case 'R':
+                    case 'S':
+                    case 'T':
+                    case 'U':
+                    case 'V':
+                    case 'W':
+                    case 'X':
+                    case 'Y':
+                    case 'Z':
+                    case '_':
+                        {
+                            String tokidstr = "";
+                            tokidstr += c;
+                            p++;
+                            c = file.buffer[p];
+                            while ((isidnum_table[c] & (IS_ID | IS_NUM)) != 0)
+                            {
+                                tokidstr += c;
+                                p++;
+                                c = file.buffer[p];
+                            }
+                            if (tp_keywords.ContainsKey(tokidstr))
+                            {
+                                tok = new Token(tp_keywords[tokidstr]);
+                            }
+                            else
+                            {
+                                tok = new Token(TokenType.IDENT);
+                                TokenSym ts = tok_alloc(tokidstr);       //find prev ident token sym or alloc a new one
+                                tok.num = ts.tok;
+                            }
+                        }
+                        break;
+
+                    case '0':
+                    case '1':
+                    case '2':
+                    case '3':
+                    case '4':
+                    case '5':
+                    case '6':
+                    case '7':
+                    case '8':
+                    case '9':
+                        {
+                            char t = c;
+                            tokcstr = "";
+                            p++;
+                            c = file.buffer[p];
+                            while (true)
+                            {
+                                tokcstr += t;
+                                if (!(((isidnum_table[c] & (IS_ID | IS_NUM)) != 0) ||
+                                    (c == '.') ||
+                                    ((c == '+' || c == '-') && (t == 'e' || t == 'E'))))
+                                    break;
+                                t = c;
+                                p++;
+                                c = file.buffer[p];
+                            }
+                        }
+                        tok = new Token(TokenType.TOK_PPNUM);
+                        break;
+
+                    case '(':
+                        tok = new Token(TokenType.LPAREN);
+                        p++;
+                        break;
+                    case ')':
+                        tok = new Token(TokenType.RPAREN);
+                        p++;
+                        break;
+                    case '{':
+                        tok = new Token(TokenType.LBRACE);
+                        p++;
+                        break;
+                    case '}':
+                        tok = new Token(TokenType.RBRACE);
+                        p++;
+                        break;
+                    case ';':
+                        tok = new Token(TokenType.SEMICOLON);
+                        p++;
+                        break;
+
+                    case '\0':
+                        tok = new Token(TokenType.EOF);
+                        break;
+
+                    default:
+                        tp.tpError("unrecognized character {0}", ((byte)c).ToString("02X"));
+                        break;
+                }
+            } while (!done);
+            file.buf_ptr = p;
         }
 
         public void next_nomacro_spc()
@@ -261,7 +457,7 @@ namespace TidepoolD
         {
             //do
             //{
-                next_nomacro_spc();
+            next_nomacro_spc();
             //} while (tok < 256 && (isidnum_table[tok - CH_EOF] & IS_SPC));
         }
 
@@ -275,6 +471,17 @@ namespace TidepoolD
         public void next()
         {
             next_nomacro();
+
+            /* convert preprocessor tokens into C tokens */
+            if (tok.type == TokenType.TOK_PPNUM)
+            {
+                parse_number(tokcstr);
+            }
+            else if (tok.type == TokenType.TOK_PPSTR)
+            {
+                parse_string(tokcstr);
+            }
+
 
             ////set up for debugging
             //tok.type = tokList[idx];
@@ -329,7 +536,13 @@ namespace TidepoolD
     public class Token
     {
         public TokenType type;
-        public int num;
+        public int num;                 //sym tbl num if token is ident
+
+        public Token(TokenType _type)
+        {
+            type = _type;
+            num = 0;
+        }
     }
 
     public class TokenSym
@@ -372,7 +585,7 @@ namespace TidepoolD
         IDENT,
         INTCONST,
 
-        //keywords
+                //keywords
         AUTO,
         BREAK,
         CASE,
@@ -446,6 +659,8 @@ namespace TidepoolD
         COMMA,
 
         EOF,
-        LAST_TOKEN
+
+        TOK_PPNUM,
+        TOK_PPSTR
     }
 }
