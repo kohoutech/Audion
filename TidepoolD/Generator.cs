@@ -128,8 +128,16 @@ namespace TidepoolD
 
             tcc_debug_start(tp);
 
+            //pp.next();
+            //decl(ValueType.VT_CONST);
+
+            //debugging
             pp.next();
-            decl(ValueType.VT_CONST);
+            while (pp.tok.type != TokenType.EOF)
+            {
+                pp.tok.writeOut();
+                pp.next();
+            }
 
             return 0;
         }

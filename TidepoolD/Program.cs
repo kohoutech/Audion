@@ -30,7 +30,7 @@ namespace TidepoolD
 {
     class Program
     {
-        const string sourceName = "test.c";
+        const string sourceName = "testA.c";
 
         //test driver
         static void Main(string[] args)

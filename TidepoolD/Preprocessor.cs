@@ -34,21 +34,16 @@ namespace TidepoolD
         public BufferedFile file;
         public Token tok;               //the current token
         public CValue tokc;             //the current const value
-        String tokcstr;                 //const string
+        public String tokcstr;                 //const string
+
+        public bool at_line_start;
 
         public List<TokenSym> table_ident;
         public Dictionary<String, TokenSym> hash_ident;
 
         public int[] isidnum_table;
 
-        public Dictionary<String, TokenType> tp_keywords;       
-
-
-        //debugging
-        //int idx;
-        //TokenType[] tokList = { TokenType.INT, TokenType.IDENT, TokenType.LPAREN, TokenType.RPAREN, TokenType.LBRACE,
-        //                          TokenType.RETURN, TokenType.INTCONST, TokenType.SEMICOLON,
-        //                          TokenType.RBRACE, TokenType.EOF};
+        public Dictionary<String, TokenType> tp_keywords;
 
         //cons
         public Preprocessor(Tidepool _tp)
@@ -58,6 +53,8 @@ namespace TidepoolD
             tok = null;
             tokc = null;
             tokcstr = "";
+
+            at_line_start = true;
 
             table_ident = new List<TokenSym>();
             hash_ident = new Dictionary<string, TokenSym>();
@@ -109,9 +106,19 @@ namespace TidepoolD
                 { "unsigned", TokenType.UNSIGNED},
                 { "void", TokenType.VOID},
                 { "volatile", TokenType.VOLATILE},
-                { "while", TokenType.WHILE}};
-
-            //  idx = 0;
+                { "while", TokenType.WHILE},
+           
+                    //preprocessing key words
+                { "ifdef", TokenType.IFDEF},
+                { "ifndef", TokenType.IFNDEF},
+                { "elif", TokenType.ELIF},
+                { "endif", TokenType.ENDIF},
+                { "include", TokenType.INCLUDE},
+                { "define", TokenType.DEFINE},
+                { "undef", TokenType.UNDEF},
+                { "line", TokenType.LINE},
+                { "error", TokenType.ERROR},
+                { "pragma", TokenType.PRAGMA}};
         }
 
         //* isidnum_table flags: */
@@ -206,8 +213,73 @@ namespace TidepoolD
         //handle_stray
         //handle_stray1
         //minp
-        //parse_line_comment
-        //parse_comment
+        
+        //line comments
+        public int parse_line_comment(int p)
+        {
+            char c;
+            p++;
+            while(true)
+            {
+                c = file.buffer[p];
+                if (c == '\n' || c == '\0')
+                {
+                    break;
+                }
+                else
+                {
+                    p++;
+                }
+            }
+            return p;
+        }
+
+        //block comments /* ... */
+        public int parse_comment(int p)
+        {
+            char c;
+            p++;
+            bool end_of_comment = false;
+            while (!end_of_comment)
+            {
+                while (true)        //scan for eoln or end of comment
+                {
+                    c = file.buffer[p];
+                    if (c == '\n' || c == '*' || c == '\\')
+                        break;
+                    p++;
+                }
+
+                //we seen either eoln or possible end of comment
+                if (c == '\n')
+                {
+                    file.line_num++;        //eoln - keep scanning
+                    p++;
+                }
+                else if (c == '*')          //possible end of comment
+                {
+                    p++;
+                    while (!end_of_comment)
+                    {
+                        c = file.buffer[p];
+                        if (c == '*')               //if we see a row of asterisks, ie ****, treat the last one as the possible start of */
+                        {
+                            p++;
+                        }
+                        else if (c == '/')
+                        {
+                            end_of_comment = true;
+                        }
+                        else
+                        {
+                            break;          //wasn't the end of comment
+                        }
+                    }
+                }
+            }
+            p++;
+            return p;
+        }
 
         public int set_idnum(int c, int val)
         {
@@ -235,18 +307,86 @@ namespace TidepoolD
         //TOK_GET
         //macro_is_equal
         //define_push
-        //define_undef
-        //define_find
+
+        public void define_undef(Sym s)
+        {
+        }
+
+        public Sym define_find(Token v)
+        {
+            return null;
+        }
+
         //free_defines
         //label_find
         //label_push
         //label_pop
         //maybe_run_test
         //expr_preprocess
-        //parse_define
+
+        public void parse_define()
+        {
+        }
+
         //search_cached_include
         //pragma_parse
-        //preprocess
+
+        public void preprocess(bool is_bof)
+        {
+            	next_nomacro();
+                switch (tok.type)
+                {
+                    case TokenType.DEFINE:
+                        next_nomacro();             //get define ident
+                        parse_define();
+                        break;
+
+                    case TokenType.UNDEF:
+                        next_nomacro();             //get undefine ident
+                        Sym s = define_find(tok);
+                        if (s != null)              // undefine symbol by putting an invalid name */
+                            define_undef(s);
+                        break;
+
+                    case TokenType.INCLUDE:
+                        break;
+
+                    case TokenType.IFNDEF:
+                        break;
+
+                    case TokenType.IF:
+                        break;
+
+                    case TokenType.IFDEF:
+                        break;
+
+                    case TokenType.ELSE:
+                        break;
+
+                    case TokenType.ELIF:
+                        break;
+
+                    case TokenType.ENDIF:
+                        break;
+
+                    case TokenType.PPNUM:
+                        break;
+
+                    case TokenType.LINE:
+                        break;
+
+                    case TokenType.ERROR:
+                        break;
+
+                    case TokenType.PRAGMA:
+                        break;
+
+                    default:
+                        break;
+                }
+
+        }
+
         //parse_escape_string
 
         public void parse_string(String s)
@@ -276,10 +416,10 @@ namespace TidepoolD
         {
             int p = file.buf_ptr;
             char c = file.buffer[p];
-            bool done;
+            bool found;
             do
             {
-                done = true;            //assume we'll find a token in this pass
+                found = true;            //assume we'll find a token in this pass
                 switch (c)
                 {
                     case ' ':
@@ -291,7 +431,7 @@ namespace TidepoolD
                             p++;
                             c = file.buffer[p];
                         }
-                        done = false;
+                        found = false;
                         break;
 
                     case '\f':
@@ -299,16 +439,43 @@ namespace TidepoolD
                     case '\r':
                         p++;
                         c = file.buffer[p];
-                        done = false;
+                        found = false;
                         break;
 
                     case '\n':
                         file.line_num++;
+                        at_line_start = true;
                         p++;
                         c = file.buffer[p];
-                        done = false;
+                        found = false;
                         break;
 
+                    case '#':
+                        p++;
+                        if (at_line_start)          //we have a preprocessor directive
+                        {
+                            file.buf_ptr = p;
+                            preprocess(at_line_start);
+                            p = file.buf_ptr;
+                            c = file.buffer[p];
+                            found = false;
+                        }
+                        else
+                        {
+                            c = file.buffer[p];
+                            if (c == '#')
+                            {
+                                p++;
+                                tok = new Token(TokenType.SHARPSHARP);
+                            }
+                            else
+                            {
+                                tok = new Token(TokenType.SHARP);
+                            }
+                        }
+                        break;
+
+                        //identifier
                     case 'a':
                     case 'b':
                     case 'c':
@@ -385,6 +552,7 @@ namespace TidepoolD
                         }
                         break;
 
+                        //number
                     case '0':
                     case '1':
                     case '2':
@@ -412,7 +580,34 @@ namespace TidepoolD
                                 c = file.buffer[p];
                             }
                         }
-                        tok = new Token(TokenType.TOK_PPNUM);
+                        tok = new Token(TokenType.PPNUM);
+                        break;
+
+                    //comment or operator
+                    case '/':
+                        p++;
+                        c = file.buffer[p];
+                        if (c == '*')
+                        {
+                            p = parse_comment(p);       //block comment
+                            c = ' ';                    // comments replaced by a blank */
+                            found = false;
+                        }
+                        else if (c == '/')
+                        {
+                            p = parse_line_comment(p);
+                            c = file.buffer[p];
+                            found = false;
+                        }
+                        else if (c == '=')
+                        {
+                            p++;
+                            tok = new Token(TokenType.SLASHEQU);
+                        }
+                        else
+                        {
+                            tok = new Token(TokenType.SLASH);
+                        }
                         break;
 
                     case '(':
@@ -441,10 +636,11 @@ namespace TidepoolD
                         break;
 
                     default:
-                        tp.tpError("unrecognized character {0}", ((byte)c).ToString("02X"));
+                        tp.tpError("unrecognized character 0x{0}", ((byte)c).ToString("X02"));
                         break;
                 }
-            } while (!done);
+            } while (!found);
+            at_line_start = false;      //if we've found a token, then we aren't at start of line anymore
             file.buf_ptr = p;
         }
 
@@ -472,30 +668,15 @@ namespace TidepoolD
         {
             next_nomacro();
 
-            /* convert preprocessor tokens into C tokens */
-            if (tok.type == TokenType.TOK_PPNUM)
+            // convert preprocessor tokens into C tokens */
+            if (tok.type == TokenType.PPNUM)
             {
                 parse_number(tokcstr);
             }
-            else if (tok.type == TokenType.TOK_PPSTR)
+            else if (tok.type == TokenType.PPSTR)
             {
                 parse_string(tokcstr);
             }
-
-
-            ////set up for debugging
-            //tok.type = tokList[idx];
-            //if (idx == 1)               //'main'
-            //{
-            //    TokenSym ts = tok_alloc_new("main");
-            //    tok.num = ts.tok;
-            //}
-            //if (idx == 6)               //69
-            //{
-            //    tokc.str = "69";
-            //    tokc.i = 69;
-            //}
-            //idx++;
         }
 
         //unget_tok
@@ -542,6 +723,20 @@ namespace TidepoolD
         {
             type = _type;
             num = 0;
+        }
+
+        //for debugging
+        public void writeOut()
+        {
+            switch (type)
+            {
+                case TokenType.IDENT:
+                    Console.Out.WriteLine("Identifier - {0}", num);
+                    break;
+                default:
+                    Console.Out.WriteLine(type.ToString());
+                    break;
+            }
         }
     }
 
@@ -627,21 +822,21 @@ namespace TidepoolD
         LPAREN,
         RPAREN,
         LBRACE,         //{
-        RBRACE,          //}
-        DOT,
-        ARROW,
+        RBRACE,         //}
+        DOT,            //.
+        ARROW,          //->
         PLUSPLUS,
         MINUSMINUS,
         AMPERSAND,
         STAR,
         PLUS,
         MINUS,
-        TIDLE,
-        EXCLAIM,
+        TILDE,
+        EXCLAIM,        //!
         SLASH,
         PERCENT,
-        LESSLESS,
-        GTRGTR,
+        LESSLESS,       //<<
+        GTRGTR,         //>>
         LESSTHAN,
         GTRTHAN,
         LESSEQU,
@@ -649,18 +844,44 @@ namespace TidepoolD
         EQUEQU,
         NOTEQU,
         CARET,
-        BAR,
-        AMPAMP,
-        BARBAR,
-        QUESTION,
+        BAR,            //|
+        AMPAMP,         //&&
+        BARBAR,         //||
+        QUESTION,       //?
         COLON,
         SEMICOLON,
-        ELIPSIS,
+        ELIPSIS,        //...
+        EQUAL,
+        STAREQU,
+        SLASHEQU,
+        PERCENTEQU,
+        PLUSEQU,
+        MINUSEQU,
+        LESSLESSEQU,
+        GTRGTREQU,
+        AMPEQU,
+        CARETEQU,
+        BAREQU,
         COMMA,
 
         EOF,
 
-        TOK_PPNUM,
-        TOK_PPSTR
+        //preprocessing tokens - IF & ELSE already handled above
+        //IF,
+        IFDEF,
+        IFNDEF,
+        ELIF,
+        //ELSE,
+        ENDIF,
+        INCLUDE,
+        DEFINE,
+        UNDEF,
+        LINE,
+        ERROR,
+        PRAGMA,
+        PPNUM,
+        PPSTR,
+        SHARP,
+        SHARPSHARP
     }
 }
