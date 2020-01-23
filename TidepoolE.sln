@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TidepoolE\TidepoolE", "TidepoolE\TidepoolE.csproj", "{BFE90E98-AECC-4B31-A484-44C089D2180F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BFE90E98-AECC-4B31-A484-44C089D2180F}.Debug|x86.ActiveCfg = Debug|x86
+		{BFE90E98-AECC-4B31-A484-44C089D2180F}.Debug|x86.Build.0 = Debug|x86
+		{BFE90E98-AECC-4B31-A484-44C089D2180F}.Release|x86.ActiveCfg = Release|x86
+		{BFE90E98-AECC-4B31-A484-44C089D2180F}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
