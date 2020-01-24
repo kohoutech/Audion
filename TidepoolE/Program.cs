@@ -27,9 +27,21 @@ using System.Text;
 
 namespace TidepoolE
 {
-    class Program
+    class TidePool
     {
+        public Scanner scan;
+
         static void Main(string[] args)
+        {
+            TidePool tp = new TidePool();
+            tp.compile();
+        }
+
+        public void read_file()
+        {
+        }
+
+        public void compile()
         {
         }
     }

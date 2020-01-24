@@ -29,5 +29,49 @@ namespace TidepoolE
 {
     class Analyzer
     {
+        public void is_integer()
+        {
+        }
+
+        public void align_to()
+        {
+        }
+
+        public void new_type()
+        {
+        }
+
+        public void pointer_to()
+        {
+        }
+
+        public void array_of()
+        {
+        }
+
+        public void func_type()
+        {
+        }
+
+        public void enum_type()
+        {
+        }
+
+        public void struct_type()
+        {
+        }
+
+        public void add_type()
+        {
+        }
     }
+
+    public class tpType
+    {
+    }
+
+    public class Member
+    {
+    }
+
 }

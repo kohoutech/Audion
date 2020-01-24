@@ -29,5 +29,89 @@ namespace TidepoolE
 {
     class Scanner
     {
+
+        public void error()
+        {
+        }
+
+        public void verror_at() 
+        {
+        }
+
+        public void error_at() 
+        {
+        }
+
+        public void error_tok()
+        {
+        }
+
+        public void warn_tok()
+        {
+        }
+
+        public void consume()
+        {
+        }
+
+        public void peek()
+        {
+        }
+
+        public void consume_ident()
+        {
+        }
+
+        public void expect()
+        {
+        }
+
+        public void expect_ident()
+        {
+        }
+
+        public void at_eof()
+        {
+        }
+
+        public void new_token()
+        {
+        }
+
+        public void startswith()
+        {
+        }
+
+        public void is_alpha()
+        {
+        }
+
+        public void is_alnum()
+        {
+        }
+
+        public void starts_with_reserved()
+        {
+        }
+
+        public void get_escape_char()
+        {
+        }
+
+        public void read_string_literal()
+        {
+        }
+
+        public void read_char_literal()
+        {
+        }
+
+        public void read_int_literal()
+        {
+        }
+
+        public void tokenize()
+        {
+        }
     }
 }
