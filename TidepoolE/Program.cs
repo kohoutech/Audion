@@ -24,25 +24,55 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.IO;
 
 namespace TidepoolE
 {
     class TidePool
     {
         public Scanner scan;
+        public Parser parser;
+        public Analyzer ana;
+        public Generator gen;
 
         static void Main(string[] args)
         {
+            string filename = "test.c";
             TidePool tp = new TidePool();
-            tp.compile();
+            tp.compile(filename);
         }
 
-        public void read_file()
+        public TidePool()
         {
+            scan = new Scanner(this);
+            parser = new Parser(this);
+            ana = new Analyzer(this);
+            gen = new Generator(this);
         }
 
-        public void compile()
+        public string read_file(string filename)
         {
+            string buf = "";
+            try
+            {
+                buf = File.ReadAllText(filename);
+            } catch(Exception e)
+            {
+                scan.error("cannot open {0}: {1}", filename, e.Message);
+            }
+            if (buf.Length == 0 || buf[buf.Length - 1] != '\n')
+                buf = buf + '\n';
+            buf = buf + '\0';
+            return buf;
+        }
+
+        public void compile(string filename)
+        {
+            scan.user_input = read_file(filename);
+            scan.token = scan.tokenize();
+            Program prog = parser.program();
+            
+            gen.generate(prog);
         }
     }
 }

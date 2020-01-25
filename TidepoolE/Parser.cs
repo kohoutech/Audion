@@ -122,16 +122,29 @@ namespace TidepoolE
             return false;
         }
 
+        // program = (global-var | function)*
         public Program program()
         {            
             List<Function> funcs = new List<Function>();
             globals = new List<Var>();
 
-            //while (!tp.scan.at_eof())
-            //{
-            //}
+            while (!tp.scan.at_eof())
+            {
+                if (is_function())
+                {
+                    Function fn = function();
+                    if (fn == null)
+                        continue;
+                    funcs.Add(fn);
+                }
 
-            return null;
+                global_var();
+            }
+
+            Program prog = new Program();
+            prog.globals = globals;
+            prog.fns = funcs;
+            return prog;
         }
 
         public tpType basetype()

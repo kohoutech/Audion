@@ -29,6 +29,13 @@ namespace TidepoolE
 {
     class Generator
     {
+        TidePool tp;
+
+        public Generator(TidePool _tp)
+        {
+            tp = _tp;
+        }
+
         public void gen_addr()
         {
         }
@@ -77,7 +84,7 @@ namespace TidepoolE
         {
         }
 
-        public void generate() 
+        public void generate(Program prog)
         {
         }
     }

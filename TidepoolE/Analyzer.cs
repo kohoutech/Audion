@@ -29,6 +29,13 @@ namespace TidepoolE
 {
     class Analyzer
     {
+        TidePool tp;
+
+        public Analyzer(TidePool _tp)
+        {
+            tp = _tp;
+        }
+
         public void is_integer()
         {
         }
