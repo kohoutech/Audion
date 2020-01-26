@@ -119,7 +119,22 @@ namespace TidepoolE
 
         public bool is_function()
         {
-            return false;
+            int tokpos = tp.scan.mark();
+            bool isfunc = false;
+
+            StorageClass sclass = StorageClass.NONE;
+            tpType ty = basetype(ref sclass);
+
+            if (tp.scan.consume(";") != null)
+            {
+                string name = null;
+                declarator(ty, ref name);
+                isfunc = (name != null) && (tp.scan.consume("(") != null);
+            }
+
+            tp.scan.reset(tokpos);
+
+            return isfunc;
         }
 
         // program = (global-var | function)*
@@ -127,6 +142,7 @@ namespace TidepoolE
         {            
             List<Function> funcs = new List<Function>();
             globals = new List<Var>();
+            tp.scan.reset(0);
 
             while (!tp.scan.at_eof())
             {
@@ -147,12 +163,120 @@ namespace TidepoolE
             return prog;
         }
 
-        public tpType basetype()
+        public tpType basetype(ref StorageClass sclass)
         {
-            return null;
+            if (!is_typename())
+                tp.scan.error_tok(tp.scan.token(), "typename expected");
+
+
+            tpType ty = Analyzer.int_type;
+            int counter = 0;
+
+            if (sclass != null) {
+    sclass = StorageClass.NONE;
+            }
+
+  while (is_typename()) {
+    Token tok = tp.scan.token();
+
+    // Handle storage class specifiers.
+    if (tp.scan.peek("typedef") != null || tp.scan.peek("static") != null || tp.scan.peek("extern")  != null) {
+      if (sclass == null)
+        tp.scan.error_tok(tok, "storage class specifier is not allowed");
+
+              if (sclass != StorageClass.NONE)
+        tp.scan.error_tok(tok, "typedef, static and extern may not be used together");
+
+
+      if (tp.scan.consume("typedef") != null)
+        sclass = StorageClass.TYPEDEF;
+      else if (tp.scan.consume("static") != null)
+        sclass = StorageClass.STATIC;
+      else if (tp.scan.consume("extern") != null)
+        sclass = StorageClass.EXTERN;
+
+      continue;
+    }
+
+  //  // Handle user-defined types.
+  //  if (!peek("void") && !peek("_Bool") && !peek("char") &&
+  //      !peek("short") && !peek("int") && !peek("long") &&
+  //      !peek("signed")) {
+  //    if (counter)
+  //      break;
+
+  //    if (peek("struct")) {
+  //      ty = struct_decl();
+  //    } else if (peek("enum")) {
+  //      ty = enum_specifier();
+  //    } else {
+  //      ty = find_typedef(token);
+  //      assert(ty);
+  //      token = token->next;
+  //    }
+
+  //    counter |= OTHER;
+  //    continue;
+  //  }
+
+  //  // Handle built-in types.
+  //  if (consume("void"))
+  //    counter += VOID;
+  //  else if (consume("_Bool"))
+  //    counter += BOOL;
+  //  else if (consume("char"))
+  //    counter += CHAR;
+  //  else if (consume("short"))
+  //    counter += SHORT;
+  //  else if (consume("int"))
+  //    counter += INT;
+  //  else if (consume("long"))
+  //    counter += LONG;
+  //  else if (consume("signed"))
+  //    counter |= SIGNED;
+
+  //  switch (counter) {
+  //  case VOID:
+  //    ty = void_type;
+  //    break;
+  //  case BOOL:
+  //    ty = bool_type;
+  //    break;
+  //  case CHAR:
+  //  case SIGNED + CHAR:
+  //    ty = char_type;
+  //    break;
+  //  case SHORT:
+  //  case SHORT + INT:
+  //  case SIGNED + SHORT:
+  //  case SIGNED + SHORT + INT:
+  //    ty = short_type;
+  //    break;
+  //  case INT:
+  //  case SIGNED:
+  //  case SIGNED + INT:
+  //    ty = int_type;
+  //    break;
+  //  case LONG:
+  //  case LONG + INT:
+  //  case LONG + LONG:
+  //  case LONG + LONG + INT:
+  //  case SIGNED + LONG:
+  //  case SIGNED + LONG + INT:
+  //  case SIGNED + LONG + LONG:
+  //  case SIGNED + LONG + LONG + INT:
+  //    ty = long_type;
+  //    break;
+  //  default:
+  //    error_tok(tok, "invalid type");
+  //  }
+  }
+
+  return ty;
+
         }
 
-        public tpType declarator()
+        public tpType declarator(tpType ty, ref string name)
         {
             return null;
         }
@@ -497,4 +621,24 @@ namespace TidepoolE
     public class Scope
     {
     }
+
+    public enum BaseTypes
+    {
+        VOID = 1 << 0,
+        BOOL = 1 << 2,
+        CHAR = 1 << 4,
+        SHORT = 1 << 6,
+        INT = 1 << 8,
+        LONG = 1 << 10,
+        OTHER = 1 << 12,
+        SIGNED = 1 << 13,
+    };
+
+    public enum StorageClass
+    {
+        NONE = 0,
+        TYPEDEF = 1 << 0,
+        STATIC = 1 << 1,
+        EXTERN = 1 << 2,
+    } 
 }

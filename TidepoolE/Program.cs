@@ -69,7 +69,7 @@ namespace TidepoolE
         public void compile(string filename)
         {
             scan.user_input = read_file(filename);
-            scan.token = scan.tokenize();
+            scan.tokenize();
             Program prog = parser.program();
             
             gen.generate(prog);
