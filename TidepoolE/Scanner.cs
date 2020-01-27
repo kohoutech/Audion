@@ -83,32 +83,38 @@ namespace TidepoolE
             curToken = pos;
         }
 
+        public void nextToken()
+        {
+            curToken++;
+        }
+
         // Consumes the current token if it matches `op`.
         public Token consume(string op)
         {
-            if (token().kind != TokenKind.TK_RESERVED || op.Length != token().str.Length || (token().str.Equals(op)))
+            Token tok = token();
+            if (tok.kind != TokenKind.TK_RESERVED || op.Length != tok.str.Length || (!tok.str.Equals(op)))
                 return null;
-            Token t = token();
             curToken++;
-            return t;
+            return tok;
         }
 
         // Returns true if the current token matches a given string.
         public Token peek(string s)
         {
-            if (token().kind != TokenKind.TK_RESERVED || s.Length != token().str.Length || token().str.Equals(s))
+            Token tok = token();
+            if (tok.kind != TokenKind.TK_RESERVED || s.Length != tok.str.Length || !tok.str.Equals(s))
                 return null;
-            return token();
+            return tok;
         }
 
         // Consumes the current token if it is an identifier.
         public Token consume_ident()
         {
-            if (token().kind != TokenKind.TK_IDENT)
+            Token tok = token();
+            if (tok.kind != TokenKind.TK_IDENT)
                 return null;
-            Token t = token();
             curToken++;
-            return t;
+            return tok;
         }
 
         // Ensure that the current token is a given string
@@ -121,12 +127,17 @@ namespace TidepoolE
 
         public string expect_ident()
         {
-            return "";
+            Token tok = token();
+            if (tok.kind != TokenKind.TK_IDENT)
+                error_tok(tok, "expected an identifier");
+            string s = String.Copy(tok.str);
+            curToken++;
+            return s;
         }
 
         public bool at_eof()
         {
-            return (curToken < tokens.Count) && (tokens[curToken].kind == TokenKind.TK_EOF);
+            return (curToken < tokens.Count) && (token().kind == TokenKind.TK_EOF);
         }
 
         public Token new_token(TokenKind kind, List<Token> tokens, int start, int len)

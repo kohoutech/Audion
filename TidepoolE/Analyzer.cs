@@ -31,7 +31,7 @@ namespace TidepoolE
     {
         TidePool tp;
 
-        public static tpType void_type  = new tpType();   //&(Type){ TY_VOID, 1, 1 };
+        public static tpType void_type = new tpType();   //&(Type){ TY_VOID, 1, 1 };
         public static tpType bool_type = new tpType();   //&(Type){ TY_BOOL, 1, 1 };
         public static tpType char_type = new tpType();   //&(Type){ TY_CHAR, 1, 1 };
         public static tpType short_type = new tpType();   //&(Type){ TY_SHORT, 2, 2 };
@@ -51,20 +51,31 @@ namespace TidepoolE
         {
         }
 
-        public void new_type()
+        public tpType new_type(TypeKind kind, int size, int align)
         {
+            tpType ty = new tpType();
+            ty.kind = kind;
+            ty.size = size;
+            ty.align = align;
+            return ty;
         }
 
-        public void pointer_to()
+        public tpType pointer_to(tpType bass)
         {
+            tpType ty = new_type(TypeKind.TY_PTR, 8, 8);
+            ty.bass = bass;
+            return ty;
         }
 
         public void array_of()
         {
         }
 
-        public void func_type()
+        public tpType func_type(tpType return_ty)
         {
+            tpType ty = new_type(TypeKind.TY_FUNC, 1, 1);
+            ty.return_ty = return_ty;
+            return ty;
         }
 
         public void enum_type()
@@ -80,8 +91,45 @@ namespace TidepoolE
         }
     }
 
+    public enum TypeKind
+    {
+        TY_VOID,
+        TY_BOOL,
+        TY_CHAR,
+        TY_SHORT,
+        TY_INT,
+        TY_LONG,
+        TY_ENUM,
+        TY_PTR,
+        TY_ARRAY,
+        TY_STRUCT,
+        TY_FUNC,
+    }
+
     public class tpType
     {
+        public TypeKind kind;
+        public int size;                // sizeof() value
+        public int align;               // alignment
+        public bool is_incomplete;      // incomplete type
+
+        public tpType bass;             // pointer or array
+        public int array_len;           // array
+        public List<Member> members;    // struct
+        public tpType return_ty;        // function
+
+        public void copy(tpType that)
+        {
+            this.kind = that.kind;
+            this.size = that.size;
+            this.align = that.align;
+            this.is_incomplete = that.is_incomplete;
+
+            this.bass = that.bass;
+            this.array_len = that.array_len;
+            this.members = that.members;
+            this.return_ty = that.return_ty;
+        }
     }
 
     public class Member

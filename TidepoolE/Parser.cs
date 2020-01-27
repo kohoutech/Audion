@@ -40,7 +40,7 @@ namespace TidepoolE
 
         public Parser(TidePool _tp)
         {
-            tp = _tp;            
+            tp = _tp;
         }
 
         public Scope enter_scope()
@@ -48,7 +48,7 @@ namespace TidepoolE
             return null;
         }
 
-        public void leave_scope()
+        public void leave_scope(Scope sc)
         {
         }
 
@@ -102,12 +102,12 @@ namespace TidepoolE
             return null;
         }
 
-        public Var new_gvar()
+        public Var new_gvar(string name, tpType ty, bool is_static, bool emit)
         {
             return null;
         }
 
-        public tpType find_typedef()
+        public tpType find_typedef(Token tok)
         {
             return null;
         }
@@ -125,7 +125,7 @@ namespace TidepoolE
             StorageClass sclass = StorageClass.NONE;
             tpType ty = basetype(ref sclass);
 
-            if (tp.scan.consume(";") != null)
+            if (tp.scan.consume(";") == null)
             {
                 string name = null;
                 declarator(ty, ref name);
@@ -139,7 +139,7 @@ namespace TidepoolE
 
         // program = (global-var | function)*
         public Program program()
-        {            
+        {
             List<Function> funcs = new List<Function>();
             globals = new List<Var>();
             tp.scan.reset(0);
@@ -168,127 +168,154 @@ namespace TidepoolE
             if (!is_typename())
                 tp.scan.error_tok(tp.scan.token(), "typename expected");
 
-
             tpType ty = Analyzer.int_type;
-            int counter = 0;
+            BaseType counter = 0;
+            bool seenLong = false;
 
-            if (sclass != null) {
-    sclass = StorageClass.NONE;
+            if (sclass != StorageClass.NOTALLOWED)
+            {
+                sclass = StorageClass.NONE;
             }
 
-  while (is_typename()) {
-    Token tok = tp.scan.token();
+            while (is_typename())
+            {
+                Token tok = tp.scan.token();
 
-    // Handle storage class specifiers.
-    if (tp.scan.peek("typedef") != null || tp.scan.peek("static") != null || tp.scan.peek("extern")  != null) {
-      if (sclass == null)
-        tp.scan.error_tok(tok, "storage class specifier is not allowed");
+                // Handle storage class specifiers.
+                if (tp.scan.peek("typedef") != null || tp.scan.peek("static") != null || tp.scan.peek("extern") != null)
+                {
+                    if (sclass == StorageClass.NOTALLOWED)
+                        tp.scan.error_tok(tok, "storage class specifier is not allowed");
 
-              if (sclass != StorageClass.NONE)
-        tp.scan.error_tok(tok, "typedef, static and extern may not be used together");
+                    if (tp.scan.consume("typedef") != null)
+                        sclass |= StorageClass.TYPEDEF;
+                    else if (tp.scan.consume("static") != null)
+                        sclass |= StorageClass.STATIC;
+                    else if (tp.scan.consume("extern") != null)
+                        sclass |= StorageClass.EXTERN;
 
+                    if ((sclass & (sclass - 1)) != 0)
+                        tp.scan.error_tok(tok, "typedef, static and extern may not be used together");
 
-      if (tp.scan.consume("typedef") != null)
-        sclass = StorageClass.TYPEDEF;
-      else if (tp.scan.consume("static") != null)
-        sclass = StorageClass.STATIC;
-      else if (tp.scan.consume("extern") != null)
-        sclass = StorageClass.EXTERN;
+                    continue;
+                }
 
-      continue;
-    }
+                  // Handle user-defined types.
+                  if (tp.scan.peek("void") == null && tp.scan.peek("_Bool") == null && tp.scan.peek("char") == null &&
+                      tp.scan.peek("short") == null && tp.scan.peek("int") == null && tp.scan.peek("long") == null &&
+                      tp.scan.peek("signed") == null) {
+                    if (counter != 0)
+                      break;
 
-  //  // Handle user-defined types.
-  //  if (!peek("void") && !peek("_Bool") && !peek("char") &&
-  //      !peek("short") && !peek("int") && !peek("long") &&
-  //      !peek("signed")) {
-  //    if (counter)
-  //      break;
+                    if (tp.scan.peek("struct") != null) {
+                      ty = struct_decl();
+                    } else if (tp.scan.peek("enum") != null) {
+                      ty = enum_specifier();
+                    } else {
+                      ty = find_typedef(tp.scan.token());
+                      if (ty == null)
+                          tp.scan.error("unknown type name", tp.scan.token().str);
+                      tp.scan.nextToken();
+                    }
 
-  //    if (peek("struct")) {
-  //      ty = struct_decl();
-  //    } else if (peek("enum")) {
-  //      ty = enum_specifier();
-  //    } else {
-  //      ty = find_typedef(token);
-  //      assert(ty);
-  //      token = token->next;
-  //    }
+                    counter |= BaseType.OTHER;
+                    continue;
+                  }
 
-  //    counter |= OTHER;
-  //    continue;
-  //  }
+                  // Handle built-in types.
+                  if (tp.scan.consume("void") != null)
+                      counter |= BaseType.VOID;
+                  else if (tp.scan.consume("_Bool") != null)
+                      counter |= BaseType.BOOL;
+                  else if (tp.scan.consume("char") != null)
+                      counter |= BaseType.CHAR;
+                  else if (tp.scan.consume("short") != null)
+                      counter |= BaseType.SHORT;
+                  else if (tp.scan.consume("int") != null)
+                      counter |= BaseType.INT;
+                  else if (tp.scan.consume("long") != null)
+                  {
+                      if (seenLong)
+                      {
+                          counter |= BaseType.LLONG;
+                      }
+                      else
+                      {
+                          counter |= BaseType.LONG;
+                          seenLong = true;
+                      }
+                  }
+                  else if (tp.scan.consume("signed") != null)
+                      counter |= BaseType.SIGNED;
 
-  //  // Handle built-in types.
-  //  if (consume("void"))
-  //    counter += VOID;
-  //  else if (consume("_Bool"))
-  //    counter += BOOL;
-  //  else if (consume("char"))
-  //    counter += CHAR;
-  //  else if (consume("short"))
-  //    counter += SHORT;
-  //  else if (consume("int"))
-  //    counter += INT;
-  //  else if (consume("long"))
-  //    counter += LONG;
-  //  else if (consume("signed"))
-  //    counter |= SIGNED;
+                  switch (counter)
+                  {
+                      case BaseType.VOID:
+                          ty = Analyzer.void_type;
+                          break;
+                      case BaseType.BOOL:
+                          ty = Analyzer.bool_type;
+                          break;
+                      case BaseType.CHAR:
+                      case BaseType.SIGNED | BaseType.CHAR:
+                          ty = Analyzer.char_type;
+                          break;
+                      case BaseType.SHORT:
+                      case BaseType.SHORT | BaseType.INT:
+                      case BaseType.SIGNED | BaseType.SHORT:
+                      case BaseType.SIGNED | BaseType.SHORT | BaseType.INT:
+                          ty = Analyzer.short_type;
+                          break;
+                      case BaseType.INT:
+                      case BaseType.SIGNED:
+                      case BaseType.SIGNED | BaseType.INT:
+                          ty = Analyzer.int_type;
+                          break;
+                      case BaseType.LONG:
+                      case BaseType.LONG | BaseType.INT:
+                      case BaseType.LLONG:
+                      case BaseType.LLONG | BaseType.INT:
+                      case BaseType.SIGNED | BaseType.LONG:
+                      case BaseType.SIGNED | BaseType.LONG | BaseType.INT:
+                      case BaseType.SIGNED | BaseType.LLONG:
+                      case BaseType.SIGNED | BaseType.LLONG | BaseType.INT:
+                          ty = Analyzer.long_type;
+                          break;
+                      default:
+                          tp.scan.error_tok(tok, "invalid type");
+                          break;
+                  }
+            }
 
-  //  switch (counter) {
-  //  case VOID:
-  //    ty = void_type;
-  //    break;
-  //  case BOOL:
-  //    ty = bool_type;
-  //    break;
-  //  case CHAR:
-  //  case SIGNED + CHAR:
-  //    ty = char_type;
-  //    break;
-  //  case SHORT:
-  //  case SHORT + INT:
-  //  case SIGNED + SHORT:
-  //  case SIGNED + SHORT + INT:
-  //    ty = short_type;
-  //    break;
-  //  case INT:
-  //  case SIGNED:
-  //  case SIGNED + INT:
-  //    ty = int_type;
-  //    break;
-  //  case LONG:
-  //  case LONG + INT:
-  //  case LONG + LONG:
-  //  case LONG + LONG + INT:
-  //  case SIGNED + LONG:
-  //  case SIGNED + LONG + INT:
-  //  case SIGNED + LONG + LONG:
-  //  case SIGNED + LONG + LONG + INT:
-  //    ty = long_type;
-  //    break;
-  //  default:
-  //    error_tok(tok, "invalid type");
-  //  }
-  }
-
-  return ty;
-
+            return ty;
         }
 
         public tpType declarator(tpType ty, ref string name)
         {
-            return null;
+            while (tp.scan.consume("*") != null)
+                ty = tp.ana.pointer_to(ty);
+
+            if (tp.scan.consume("(") != null)
+            {
+                tpType placeholder = new tpType();
+                tpType new_ty = declarator(placeholder, ref name);
+                tp.scan.expect(")");
+                placeholder.copy(type_suffix(ty));
+                return new_ty;
+            }
+
+            name = tp.scan.expect_ident();
+            return type_suffix(ty);
         }
 
         public tpType abstract_declarator()
         {
             return null;
         }
-        
-        public tpType type_suffix()
+
+        public tpType type_suffix(tpType ty)
         {
-            return null;
+            return ty;
         }
 
         public tpType type_name()
@@ -329,18 +356,77 @@ namespace TidepoolE
             return null;
         }
 
-        public List<Var> read_func_param()
+        public Var read_func_param()
         {
             return null;
         }
 
-        public void read_func_params()
+        public void read_func_params(Function fn)
         {
+            if (tp.scan.consume(")") != null)       //empty param list
+                return;
+
+            int tokpos = tp.scan.mark();
+            if ((tp.scan.consume("void") != null) && (tp.scan.consume(")") != null))    //(void) param list
+                return;
+
+            tp.scan.reset(tokpos);                      //have param list, reset token to start of list
+            fn.parameters.Add(read_func_param());       //first param in list
+
+            while (tp.scan.consume(")") == null)
+            {
+                tp.scan.expect(",");
+
+                if (tp.scan.consume("...") != null)
+                {
+                    fn.has_varargs = true;
+                    tp.scan.expect(")");
+                    return;
+                }
+
+                fn.parameters.Add(read_func_param());
+            }
         }
 
         public Function function()
         {
-            return null;
+            locals = null;
+
+            StorageClass sclass = StorageClass.NONE;
+            tpType ty = basetype(ref sclass);
+            string name = null;
+            ty = declarator(ty, ref name);
+
+            // Add a function type to the scope
+            new_gvar(name, tp.ana.func_type(ty), false, false);
+
+            // Construct a function object
+            Function fn = new Function();
+            fn.name = name;
+            fn.is_static = (sclass == StorageClass.STATIC);
+            tp.scan.expect("(");
+
+            Scope sc = enter_scope();
+            read_func_params(fn);
+
+            if (tp.scan.consume(";") != null)
+            {
+                leave_scope(sc);
+                return null;
+            }
+
+            // Read function body
+            List<Node> body = new List<Node>();
+            tp.scan.expect("{");
+            while (tp.scan.consume("}") == null)
+            {
+                body.Add(stmt());                
+            }
+            leave_scope(sc);
+
+            fn.node = body;
+            fn.locals = locals;
+            return fn;
         }
 
         public Initializer new_init_val()
@@ -427,7 +513,11 @@ namespace TidepoolE
 
         public bool is_typename()
         {
-            return false;
+            return (tp.scan.peek("void") != null || tp.scan.peek("_Bool") != null || tp.scan.peek("char") != null ||
+                    tp.scan.peek("short") != null || tp.scan.peek("int") != null || tp.scan.peek("long") != null ||
+                    tp.scan.peek("enum") != null || tp.scan.peek("struct") != null || tp.scan.peek("typedef") != null ||
+                    tp.scan.peek("static") != null || tp.scan.peek("extern") != null || tp.scan.peek("signed") != null ||
+                    find_typedef(tp.scan.token()) != null);
         }
 
         public Node stmt()
@@ -573,7 +663,7 @@ namespace TidepoolE
         public Node primary()
         {
             return null;
-        }        
+        }
     }
 
     //---------------------------------------------------------------
@@ -584,7 +674,7 @@ namespace TidepoolE
 
     //---------------------------------------------------------------
 
-    public class Var 
+    public class Var
     {
     }
 
@@ -599,9 +689,21 @@ namespace TidepoolE
         public bool is_static;
         public bool has_varargs;
 
-        public Node node;
+        public List<Node> node;
         public List<Var> locals;
         public int stack_size;
+
+        public Function()
+        {
+            name = "";
+            parameters = new List<Var>();
+            is_static = false;
+            has_varargs = false;
+
+            node = null;
+            locals = new List<Var>();
+            stack_size = 0;
+        }
     }
 
     public class Program
@@ -622,7 +724,8 @@ namespace TidepoolE
     {
     }
 
-    public enum BaseTypes
+    [Flags]
+    public enum BaseType
     {
         VOID = 1 << 0,
         BOOL = 1 << 2,
@@ -630,15 +733,18 @@ namespace TidepoolE
         SHORT = 1 << 6,
         INT = 1 << 8,
         LONG = 1 << 10,
+        LLONG = 1 << 11,
         OTHER = 1 << 12,
         SIGNED = 1 << 13,
     };
 
+    [Flags]
     public enum StorageClass
     {
         NONE = 0,
         TYPEDEF = 1 << 0,
         STATIC = 1 << 1,
         EXTERN = 1 << 2,
-    } 
+        NOTALLOWED = 1 << 4,
+    }
 }
