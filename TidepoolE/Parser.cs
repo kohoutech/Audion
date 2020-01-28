@@ -31,11 +31,17 @@ namespace TidepoolE
     {
         public TidePool tp;
 
+        // All local variable instances created during parsing are accumulated to this list.
         List<Var> locals;
+
+        // Likewise, global variables are accumulated to this list.
         List<Var> globals;
-        VarScope varscope;
-        TagScope tagscope;
+
+        // C has two block scopes; one is for variables/typedefs and the other is for struct/union/enum tags.
+        List<VarScope> var_scope;
+        List<TagScope> tag_scope;
         int scope_depth;
+
         Node current_switch;
 
         public Parser(TidePool _tp)
@@ -45,7 +51,11 @@ namespace TidepoolE
 
         public Scope enter_scope()
         {
-            return null;
+            Scope sc = new Scope();
+            sc.var_scope = var_scope;
+            sc.tag_scope = tag_scope;
+            scope_depth++;
+            return sc;
         }
 
         public void leave_scope(Scope sc)
@@ -87,14 +97,22 @@ namespace TidepoolE
             return null;
         }
 
-        public VarScope push_scope()
+        public VarScope push_scope(string name)
         {
-            return null;
+            VarScope sc = new VarScope();
+            sc.name = name;
+            sc.depth = scope_depth;
+            var_scope.Add(sc);
+            return sc;
         }
 
-        public Var new_var()
+        public Var new_var(string name, tpType ty, bool is_local)
         {
-            return null;
+            Var var = new Var();
+            var.name = name;
+            var.ty = ty;
+            var.is_local = is_local;
+            return var;
         }
 
         public Var new_lvar()
@@ -104,7 +122,16 @@ namespace TidepoolE
 
         public Var new_gvar(string name, tpType ty, bool is_static, bool emit)
         {
-            return null;
+            Var var = new_var(name, ty, false);
+            var.is_static = is_static;
+            push_scope(name).var = var;
+
+            if (emit)
+            {
+                globals.Add(var);
+            }
+
+            return var;
         }
 
         public tpType find_typedef(Token tok)
@@ -676,6 +703,16 @@ namespace TidepoolE
 
     public class Var
     {
+        public string name;        // Variable name
+        public tpType ty;          // Type
+        public bool is_local;  // local or global
+
+        // Local variable
+        public int offset;    // Offset from RBP
+
+        // Global variable
+        public bool is_static;
+        public Initializer initializer;
     }
 
     public class Initializer
@@ -712,8 +749,17 @@ namespace TidepoolE
         public List<Function> fns;
     }
 
+    // Scope for local variables, global variables, typedefs or enum constants
     public class VarScope
     {
+        public VarScope next;
+        public string name;
+        public int depth;
+
+        public Var var;
+        public tpType type_def;
+        public tpType enum_ty;
+        public int enum_val;
     }
 
     public class TagScope
@@ -722,6 +768,8 @@ namespace TidepoolE
 
     public class Scope
     {
+        public List<VarScope> var_scope;
+        public List<TagScope> tag_scope;
     }
 
     [Flags]

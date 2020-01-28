@@ -31,12 +31,12 @@ namespace TidepoolE
     {
         TidePool tp;
 
-        public static tpType void_type = new tpType();   //&(Type){ TY_VOID, 1, 1 };
-        public static tpType bool_type = new tpType();   //&(Type){ TY_BOOL, 1, 1 };
-        public static tpType char_type = new tpType();   //&(Type){ TY_CHAR, 1, 1 };
-        public static tpType short_type = new tpType();   //&(Type){ TY_SHORT, 2, 2 };
-        public static tpType int_type = new tpType();   //&(Type){ TY_INT, 4, 4 };
-        public static tpType long_type = new tpType();   //&(Type){ TY_LONG, 8, 8 };
+        public static tpType void_type = new_type(TypeKind.TY_VOID, 1, 1 );
+        public static tpType bool_type = new_type(TypeKind.TY_BOOL, 1, 1);
+        public static tpType char_type = new_type(TypeKind.TY_CHAR, 1, 1 );
+        public static tpType short_type = new_type(TypeKind.TY_SHORT, 2, 2);
+        public static tpType int_type = new_type(TypeKind.TY_INT, 4, 4);
+        public static tpType long_type = new_type(TypeKind.TY_LONG, 8, 8);
 
         public Analyzer(TidePool _tp)
         {
@@ -51,7 +51,7 @@ namespace TidepoolE
         {
         }
 
-        public tpType new_type(TypeKind kind, int size, int align)
+        public static tpType new_type(TypeKind kind, int size, int align)
         {
             tpType ty = new tpType();
             ty.kind = kind;
