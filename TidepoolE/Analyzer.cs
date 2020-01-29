@@ -86,7 +86,7 @@ namespace TidepoolE
         {
         }
 
-        public void add_type()
+        public void add_type(Node node)
         {
         }
     }
