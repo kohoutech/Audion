@@ -77,19 +77,27 @@ namespace TidepoolE
             return null;
         }
 
-        public Node new_node()
+        public Node new_node(NodeKind kind, Token tok)
         {
-            return null;
+            Node node = new Node();
+            node.kind = kind;
+            node.tok = tok;
+            return node;
         }
 
-        public Node new_binary()
+        public Node new_binary(NodeKind kind, Node lhs, Node rhs, Token tok)
         {
-            return null;
+            Node node = new_node(kind, tok);
+            node.lhs = lhs;
+            node.rhs = rhs;
+            return node;
         }
 
-        public Node new_unary()
+        public Node new_unary(NodeKind kind, Node expr, Token tok)
         {
-            return null;
+            Node node = new_node(kind, tok);
+            node.lhs = expr;
+            return node;
         }
 
         public Node new_num()
@@ -562,15 +570,16 @@ namespace TidepoolE
         public Node stmt2()
         {
             Token tok;
+            Node node;
 
             if ((tok = tp.scan.consume("return")) != null)
             {
-            //    if (consume(";"))
-            //        return new_node(ND_RETURN, tok);
+                if (tp.scan.consume(";") != null)
+                    return new_node(NodeKind.ND_RETURN, tok);
 
-            //    Node* node = new_unary(ND_RETURN, expr(), tok);
-            //    expect(";");
-            //    return node;
+                node = new_unary(NodeKind.ND_RETURN, expr(), tok);
+                tp.scan.expect(";");
+                return node;
             }
 
             if ((tok = tp.scan.consume("if")) != null)
@@ -719,7 +728,7 @@ namespace TidepoolE
             }
 
             if ((tok = tp.scan.consume(";")) != null)
-                return new_node(ND_NULL, tok);
+                return new_node(NodeKind.ND_NULL, tok);
 
             if ((tok = tp.scan.consume_ident()) != null)
             {
@@ -735,14 +744,22 @@ namespace TidepoolE
             if (is_typename())
                 return declaration();
 
-            Node node = read_expr_stmt();
+            node = read_expr_stmt();
             tp.scan.expect(";");
             return node;
         }
 
         public Node expr()
         {
-            return null;
+            Token tok;
+            Node node = assign();
+            while ((tok = tp.scan.consume(",")) != null)
+            {
+                node = new_unary(NodeKind.ND_EXPR_STMT, node, node.tok);
+                node = new_binary(NodeKind.ND_COMMA, node, assign(), tok);
+            }
+            return node;
+
         }
 
         public long eval()
@@ -878,8 +895,116 @@ namespace TidepoolE
 
     //---------------------------------------------------------------
 
+    // AST node
+    public enum NodeKind
+    {
+        ND_ADD,        // num + num
+        ND_PTR_ADD,    // ptr + num or num + ptr
+        ND_SUB,        // num - num
+        ND_PTR_SUB,    // ptr - num
+        ND_PTR_DIFF,   // ptr - ptr
+        ND_MUL,        // *
+        ND_DIV,        // /
+        ND_BITAND,     // &
+        ND_BITOR,      // |
+        ND_BITXOR,     // ^
+        ND_SHL,        // <<
+        ND_SHR,        // >>
+        
+        ND_EQ,         // ==
+        ND_NE,         // !=
+        ND_LT,         // <
+        ND_LE,         // <=
+        ND_ASSIGN,     // =
+        ND_TERNARY,    // ?:
+        
+        ND_PRE_INC,    // pre ++
+        ND_PRE_DEC,    // pre --
+        ND_POST_INC,   // post ++
+        ND_POST_DEC,   // post --
+
+        ND_ADD_EQ,     // +=
+        ND_PTR_ADD_EQ, // +=
+        ND_SUB_EQ,     // -=
+        ND_PTR_SUB_EQ, // -=
+        ND_MUL_EQ,     // *=
+        ND_DIV_EQ,     // /=
+        ND_SHL_EQ,     // <<=
+        ND_SHR_EQ,     // >>=
+        ND_BITAND_EQ,  // &=
+        ND_BITOR_EQ,   // |=
+        ND_BITXOR_EQ,  // ^=
+        ND_COMMA,      // ,
+        ND_MEMBER,     // . (struct member access)
+        ND_ADDR,       // unary &
+        ND_DEREF,      // unary *
+        ND_NOT,        // !
+        ND_BITNOT,     // ~
+        ND_LOGAND,     // &&
+        ND_LOGOR,      // ||
+
+        ND_RETURN,     // "return"
+        ND_IF,         // "if"
+        ND_WHILE,      // "while"
+        ND_FOR,        // "for"
+        ND_DO,         // "do"
+        ND_SWITCH,     // "switch"
+        ND_CASE,       // "case"
+        ND_BLOCK,      // { ... }
+        ND_BREAK,      // "break"
+        ND_CONTINUE,   // "continue"
+        ND_GOTO,       // "goto"
+
+        ND_LABEL,      // Labeled statement
+        ND_FUNCALL,    // Function call
+        ND_EXPR_STMT,  // Expression statement
+        ND_STMT_EXPR,  // Statement expression
+        ND_VAR,        // Variable
+        ND_NUM,        // Integer
+        ND_CAST,       // Type cast
+        ND_NULL,       // Empty statement
+    }
+
     public class Node
     {
+        public NodeKind kind; // Node kind
+        public Type ty;      // Type, e.g. int or pointer to int
+        public Token tok;    // Representative token
+
+        public Node lhs;     // Left-hand side
+        public Node rhs;     // Right-hand side
+
+        // "if, "while" or "for" statement
+        public Node cond;
+        public Node then;
+        public Node els;
+        public Node init;
+        public Node inc;
+
+        // Block or statement expression
+        public Node body;
+
+        // Struct member access
+        public Member member;
+
+        // Function call
+        public string funcname;
+        public Node args;
+
+        // Goto or labeled statement
+        public string label_name;
+
+        // Switch-cases
+        public Node case_next;
+        public Node default_case;
+        public int case_label;
+        public int case_end_label;
+
+        // Variable
+        public Var var;
+
+        // Integer literal
+        public long val;
     }
 
     //---------------------------------------------------------------
