@@ -1,6 +1,6 @@
 ﻿/* ----------------------------------------------------------------------------
 Transonic Patch Library
-Copyright (C) 1995-2019  George E Greaney
+Copyright (C) 1995-2020  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -41,6 +41,8 @@ namespace Transonic.Patch
         public String title;
         public Rectangle newPanelBar;
 
+        public iPatchBox model;
+
         //box constants
         readonly Pen NORMALBORDER  = Pens.Black;
         readonly Pen SELECTEDBORDER = new Pen(Color.Black, 3.0f);
@@ -50,57 +52,71 @@ namespace Transonic.Patch
         readonly Font TITLEFONT = SystemFonts.DefaultFont;
         readonly int FRAMEWIDTH = 100;
 
-        public PatchBox()
+        internal PatchBox(iPatchBox _boxModel)
         {
             canvas = null;
+            model = _boxModel;
 
             frame.Location = new Point(0,0);
             frame.Width = FRAMEWIDTH;
 
-            title = "untitled";
+            //set box title bar
+            title = model.getTitle();
             titleBar.Location = frame.Location;
             titleBar.Width = FRAMEWIDTH;
             titleBar.Height = 25;
             nextPanelPos = titleBar.Bottom;
             frame.Height = nextPanelPos;
 
+            //set box's panels
             panels = new List<PatchPanel>();
             panelNames = new Dictionary<string, PatchPanel>();
+
+            List<iPatchPanel> ipanels = model.getPanels();
+            foreach (iPatchPanel ipanel in ipanels)
+            {
+                addPanel(ipanel);
+            }
 
             isSelected = false;
             isTargeted = false;
         }
 
-//- box methods ---------------------------------------------------------------
+        //- box methods ---------------------------------------------------------------
 
-        public bool hitTest(Point p)
+        internal void remove()
+        {
+            model.remove();
+        }
+
+        internal bool hitTest(Point p)
         {
             return (frame.Contains(p));
         }
 
         //box can be dragged by clicking in its title bar
-        public bool dragTest(Point p)
+        internal bool dragTest(Point p)
         {
             return (titleBar.Contains(p));
         }
 
-        public void setSelected(bool _selected)
+        internal void setSelected(bool _selected)
         {
             isSelected = _selected;
         }
 
-        public void setTargeted(bool _targeted)
+        internal void setTargeted(bool _targeted)
         {
             isTargeted = _targeted;
         }
 
-        public Point getPos()
+        internal Point getPos()
         {
             return frame.Location;
         }
 
         //move frame, title and all panels to new location
-        public void setPos(Point pos)
+        internal void setPos(Point pos)
         {
             Point here = getPos();
             int xofs = pos.X - here.X;
@@ -116,28 +132,16 @@ namespace Transonic.Patch
 //- mouse methods -------------------------------------------------------------
 
         //called by canvas when user double clicks on title bar
-        public virtual void onTitleDoubleClick()
+        public void onTitleDoubleClick()
         {
+            model.titleDoubleClick();
         }
 
-//- panel methods -------------------------------------------------------------
+        //- panel methods -------------------------------------------------------------
 
-        public PatchPanel panelHitTest(Point p)
+        public void addPanel(iPatchPanel iPanel)
         {
-            PatchPanel result = null;
-            foreach (PatchPanel panel in panels)
-            {
-                if (panel.hitTest(p))
-                {
-                    result = panel;
-                    break;
-                }
-            }
-            return result;
-        }
-
-        public void addPanel(PatchPanel panel)
-        {
+            PatchPanel panel = new PatchPanel(this, iPanel);
             panels.Add(panel);
             panelNames.Add(panel.panelName, panel);
             panel.setPos(frame.Left, frame.Top + nextPanelPos);
@@ -155,12 +159,22 @@ namespace Transonic.Patch
             return result;
         }
 
-        public void removePanel(PatchPanel panel)
-        { 
+        internal PatchPanel panelHitTest(Point p)
+        {
+            PatchPanel result = null;
+            foreach (PatchPanel panel in panels)
+            {
+                if (panel.hitTest(p))
+                {
+                    result = panel;
+                    break;
+                }
+            }
+            return result;
         }
 
         //called by canvas to get all of a box's connections for deletion
-        public List<PatchWire> getWireList()
+        internal List<PatchWire> getWireList()
         {
             List<PatchWire> wires = new List<PatchWire>();
             foreach (PatchPanel panel in panels)
@@ -173,9 +187,9 @@ namespace Transonic.Patch
             return wires;
         }
 
-//- painting ------------------------------------------------------------------
+        //- painting ------------------------------------------------------------------
 
-        public void paint(Graphics g) 
+        internal void paint(Graphics g) 
         {
             //background
             g.FillRectangle(BACKGROUNDCOLOR, frame);
@@ -196,6 +210,23 @@ namespace Transonic.Patch
             //frame
             g.DrawRectangle(isSelected ? SELECTEDBORDER : (isTargeted ? TARGETEDBORDER : NORMALBORDER), frame);
         }
+    }
+
+    //- model interface -------------------------------------------------------
+
+    public interface iPatchBox
+    {
+        //get box's title from model
+        string getTitle();
+
+        //get list of box's panels from model
+        List<iPatchPanel> getPanels();
+
+        //remove this box's model from patch
+        void remove();
+
+        //box's title bar was double clicked
+        void titleDoubleClick();
     }
 }
 

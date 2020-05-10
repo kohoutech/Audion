@@ -1,6 +1,6 @@
 ﻿/* ----------------------------------------------------------------------------
 Transonic Patch Library
-Copyright (C) 1995-2019  George E Greaney
+Copyright (C) 1995-2020  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -40,20 +40,25 @@ namespace Transonic.Patch
         public PatchBox patchbox;
         public List<PatchWire> wires;
         public CONNECTIONTYPE connType;
+        public Point connectionPoint;
 
         public Rectangle frame;
         public int frameWidth;
         public int frameHeight;
 
-        public PatchPanel(PatchBox box, String _panelName)
+        public iPatchPanel model;
+
+        public PatchPanel(PatchBox box, iPatchPanel _model)
         {
             patchbox = box;
-            panelName = _panelName;
+            model = _model;
+            panelName = model.getName();
 
-            updateFrame(patchbox.frame.Width, 20);      //default frame size
+            updateFrame(patchbox.frame.Width, model.getHeight());
 
             wires = new List<PatchWire>();
-            connType = CONNECTIONTYPE.NEITHER;
+            connType = model.getConnType();
+            connectionPoint = model.connectionPoint();
         }
 
         public void updateFrame(int width, int height)
@@ -63,23 +68,23 @@ namespace Transonic.Patch
             frame = new Rectangle(0, 0, frameWidth, frameHeight);
         }
 
-        public virtual void setPos(int xOfs, int yOfs)
+        public void setPos(int xOfs, int yOfs)
         {
             frame.Offset(xOfs, yOfs);
             foreach(PatchWire connector in wires)
             {
                 if (connType == CONNECTIONTYPE.SOURCE)
                 {
-                    connector.SourceEndPos = this.ConnectionPoint;
+                    connector.SourceEndPos = this.ConnectionPoint();
                 }
                 if (connType == CONNECTIONTYPE.DEST)
                 {
-                    connector.DestEndPos = this.ConnectionPoint;
+                    connector.DestEndPos = this.ConnectionPoint();
                 }
             }
         }
 
-        public virtual bool hitTest(Point p)
+        public bool hitTest(Point p)
         {
             return (frame.Contains(p));
         }
@@ -97,17 +102,17 @@ namespace Transonic.Patch
         }
 
         //default connection point - dead center of the frame
-        public virtual Point ConnectionPoint
+        public Point ConnectionPoint()
         {
-            get { return new Point(frame.Left + frame.Width / 2, frame.Top + frame.Height / 2); }
+            return connectionPoint;
         }
 
-        public virtual void connectLine(PatchWire line)
+        public void connectLine(PatchWire line)
         {
             wires.Add(line);
         }
 
-        public virtual void disconnectLine(PatchWire line)
+        public void disconnectLine(PatchWire line)
         {
             wires.Remove(line);                
         }
@@ -119,43 +124,90 @@ namespace Transonic.Patch
 
 //- user input ----------------------------------------------------------------
 
-        public virtual bool canTrackMouse()
+        public bool canTrackMouse()
         {
-            return false;
+            return model.canTrackMouse();
         }
 
-        public virtual void onMouseDown(Point pos)
+        public void onMouseDown(Point pos)
         {
+            model.mouseDown(pos);
         }
         
-        public virtual void onMouseMove(Point pos)
+        public void onMouseMove(Point pos)
         {
+            model.mouseMove(pos);
         }
         
-        public virtual void onMouseUp(Point pos)
+        public void onMouseUp(Point pos)
         {
+            model.mouseUp(pos);
         }
 
-        public virtual void onClick(Point pos)
+        public void onClick(Point pos)
         {
+            model.click(pos);
         }
 
-        public virtual void onDoubleClick(Point pos)
+        public void onDoubleClick(Point pos)
         {
+            model.doubleClick(pos);
         }
 
-        public virtual void onRightClick(Point pos)
+        public void onRightClick(Point pos)
         {
+            model.rightClick(pos);
         }
 
 //- painting ------------------------------------------------------------------
 
-        public virtual void paint(Graphics g)
+        public void paint(Graphics g)
         {
             g.DrawRectangle(Pens.Black, frame);
+            model.paint(g);
         }
     }
 
+    //- model interface -------------------------------------------------------
+
+    public interface iPatchPanel
+    {
+        //get panel's name from model
+        string getName();
+
+        //get panel height from model
+        int getHeight();
+
+        //get penel type (source, dest, neither) from model
+        PatchPanel.CONNECTIONTYPE getConnType();
+
+        //get pos of connection on panel from model
+        Point connectionPoint();
+
+        //can the panel track the mosue movements?
+        bool canTrackMouse();
+
+        //handle mouse down events
+        void mouseDown(Point pos);
+
+        //handle mouse move events
+        void mouseMove(Point pos);
+
+        //handle mouse up events
+        void mouseUp(Point pos);
+
+        //handle mouse single left click events
+        void click(Point pos);
+
+        //handle mouse right click events
+        void rightClick(Point pos);
+
+        //handle mouse double click events
+        void doubleClick(Point pos);
+
+        //paint the panel's display inside it's frame
+        void paint(Graphics g);
+    }
 }
 
 //Console.WriteLine("there's no sun in the shadow of the Wizard");

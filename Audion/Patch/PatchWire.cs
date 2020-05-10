@@ -1,6 +1,6 @@
 ﻿/* ----------------------------------------------------------------------------
 Transonic Patch Library
-Copyright (C) 1995-2019  George E Greaney
+Copyright (C) 1995-2020  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -40,12 +40,16 @@ namespace Transonic.Patch
         float lineWidth;
         GraphicsPath path;
 
-        bool isSelected;                    
-        
-        //for reloading existing connections from a stored patch
-        public PatchWire(PatchPanel srcPanel, PatchPanel destPanel)
+        bool isSelected;
+
+        public iPatchWire model;
+
+        //we only create a new patch wire when we have two panels to connect
+        public PatchWire(PatchPanel srcPanel, PatchPanel destPanel, iPatchWire _model)
         {
             canvas = null;
+            model = _model;
+
             connectSourceJack(srcPanel);
             connectDestJack(destPanel);
 
@@ -77,22 +81,23 @@ namespace Transonic.Patch
         
 //- connections ---------------------------------------------------------------
 
-        public void connectSourceJack(PatchPanel _srcPanel)
+        private void connectSourceJack(PatchPanel _srcPanel)
         {
             srcPanel = _srcPanel;
-            srcEnd = srcPanel.ConnectionPoint;
+            srcEnd = srcPanel.ConnectionPoint();
             srcPanel.connectLine(this);                     //connect line & source panel in view     
         }
 
         public void connectDestJack(PatchPanel _destPanel)
         {
             destPanel = _destPanel;
-            destEnd = destPanel.ConnectionPoint;
+            destEnd = destPanel.ConnectionPoint();
             destPanel.connectLine(this);                            //connect line & dest panel in view            
         }
 
         public void disconnect()
         {
+            model.disconnect();                         //tell wire to disconnect itself from units in patch
             if (srcPanel != null)
             {
                 srcPanel.disconnectLine(this);
@@ -148,12 +153,14 @@ namespace Transonic.Patch
 
 //- user input ----------------------------------------------------------------
 
-        public virtual void onDoubleClick(Point pos)
+        public void onDoubleClick(Point pos)
         {
+            model.doubleClick();
         }
 
-        public virtual void onRightClick(Point pos)
+        public void onRightClick(Point pos)
         {
+            model.rightClick();
         }
 
 //- painting ------------------------------------------------------------------
@@ -166,6 +173,21 @@ namespace Transonic.Patch
             }
         }
     }
+
+    //- model interface -------------------------------------------------------
+
+    public interface iPatchWire
+    {
+        //disconnect source and dest units in patch
+        void disconnect();
+
+        //handle mouse double click events
+        void doubleClick();
+
+        //handle mouse right click events
+        void rightClick();
+    }
+
 }
 
 //Console.WriteLine("there's no sun in the shadow of the Wizard");

@@ -1,6 +1,6 @@
 ﻿/* ----------------------------------------------------------------------------
 Transonic Patch Library
-Copyright (C) 1995-2019  George E Greaney
+Copyright (C) 1995-2020  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,8 +24,6 @@ using System.Text;
 using System.Windows.Forms;
 using System.Drawing;
 using System.Drawing.Drawing2D;
-
-using Origami.ENAML;
 
 namespace Transonic.Patch
 {
@@ -59,9 +57,9 @@ namespace Transonic.Patch
         PatchPanel trackingPanel;
 
         //cons
-        public PatchCanvas(IPatchModel _patchwin)
+        public PatchCanvas()
         {
-            patchModel = _patchwin;
+            patchModel = null;
 
             palette = new PatchPalette(this);
             palette.Location = new Point(this.ClientRectangle.Left, this.ClientRectangle.Top);
@@ -99,9 +97,15 @@ namespace Transonic.Patch
             }
         }
 
+        public void setCanvasColor(Color color)
+        {
+            this.BackColor = color;
+            this.Invalidate();
+        }
+
         //- palette management ----------------------------------------------------------
 
-        public void openPalette(bool isOpen)
+        internal void openPalette(bool isOpen)
         {
             if (isOpen)
             {
@@ -120,26 +124,31 @@ namespace Transonic.Patch
             palette.Invalidate();
         }
 
-        public void setPaletteItems(List<PaletteItem> items)
+        public void addPaletteGroup(string groupName)
         {
-            palette.setItems(items);
+            palette.addGroup(groupName);
         }
 
-        public void enablePaletteItem(PaletteItem item)
+        public void addPaletteItem(string groupName, string itemName, string modelName)
         {
-            item.enabled = true;
-            palette.enableItem(item);
+            palette.addItem(groupName, itemName, modelName);
         }
 
-        public void disablePaletteItem(PaletteItem item)
+        public void enablePaletteItem(string itemName)
         {
-            item.enabled = false;
-            palette.enableItem(item);
+            palette.enableItem(itemName, true);
         }
 
-        public void handlePaletteItemDoubleClick(PaletteItem item)
+        public void disablePaletteItem(string itemName)
         {
-            PatchBox newBox = patchModel.getPatchBox(item);
+            palette.enableItem(itemName, false);
+        }
+
+        //dbl clicking on palette item gets a new model box from the model from the model name associated with the palette item
+        //a new patch box is created from this model box & added to the canvas
+        internal void handlePaletteItemDoubleClick(String modelName)
+        {
+            iPatchBox newBox = patchModel.getPatchBox(modelName);
             addPatchBox(newBox);
         }
 
@@ -151,17 +160,15 @@ namespace Transonic.Patch
             List<PatchWire> delWireList = new List<PatchWire>(wireList);
             foreach (PatchWire wire in delWireList)
             {
-                removePatchWire(wire, false);
+                removePatchWire(wire);
             }
 
             //boxes
             List<PatchBox> delboxList = new List<PatchBox>(boxList);
             foreach (PatchBox box in delboxList)
             {
-                removePatchBox(box, false);
+                removePatchBox(box);
             }
-
-            patchModel.patchHasBeenCleared();
 
             newBoxPos = new Point(newBoxOrg.X, newBoxOrg.Y);
         }
@@ -169,9 +176,9 @@ namespace Transonic.Patch
         //- box methods ---------------------------------------------------------------
 
         //add a patch box at default location on canvas
-        public void addPatchBox(PatchBox box)
+        public void addPatchBox(iPatchBox boxModel)
         {
-            addPatchBox(box, newBoxPos.X, newBoxPos.Y);
+            addPatchBox(boxModel, newBoxPos.X, newBoxPos.Y);
             newBoxPos.Offset(newBoxOfs);
             if (!this.ClientRectangle.Contains(newBoxOrg))
             {
@@ -179,30 +186,26 @@ namespace Transonic.Patch
             }
         }
 
-        public void addPatchBox(PatchBox box, int xpos, int ypos)
+        public void addPatchBox(iPatchBox boxModel, int xpos, int ypos)
         {
+            PatchBox box = new PatchBox(boxModel);
             box.canvas = this;
             box.setPos(new Point(xpos, ypos));
             boxList.Add(box);
             zList.Add(box);
-            patchModel.patchHasChanged();
             Invalidate();
         }
 
-        public void removePatchBox(PatchBox box, bool notify)
+        public void removePatchBox(PatchBox box)
         {
             List<PatchWire> wires = box.getWireList();
             foreach (PatchWire wire in wires)
             {
-                removePatchWire(wire, false);           //remove all connections first
+                removePatchWire(wire);                  //remove all connections first
             }
-            patchModel.removePatchBox(box);               //delete box's model
+            box.remove();                               //tell box to remove its model from patch
             boxList.Remove(box);                        //and remove box from canvas            
             zList.Remove(box);
-            if (notify)
-            {
-                patchModel.patchHasChanged();
-            }
             Invalidate();
         }
 
@@ -237,7 +240,7 @@ namespace Transonic.Patch
             Invalidate();
         }
 
-        public  List<PatchBox> getBoxList()
+        public List<PatchBox> getBoxList()
         {
             return boxList;
         }
@@ -249,21 +252,15 @@ namespace Transonic.Patch
             wire.canvas = this;
             wireList.Add(wire);                                      //add to canvas
             zList.Add(wire);
-            patchModel.patchHasChanged();
             Invalidate();
         }
 
         //patch wire will be connected to source jack, but may or may not be connected to dest jack
-        public void removePatchWire(PatchWire wire, bool notify)
+        public void removePatchWire(PatchWire wire)
         {
-            patchModel.removePatchWire(wire);             //delete wire's model
             wire.disconnect();                          //and disconnect wire from source & dest jacks
             wireList.Remove(wire);
             zList.Remove(wire);
-            if (notify)
-            {
-                patchModel.patchHasChanged();
-            }
             Invalidate();
         }
 
@@ -343,7 +340,7 @@ namespace Transonic.Patch
             }
 
             //we clicked on a blank area of the canvas - deselect current selection if there is one
-            if (!handled)            
+            if (!handled)
             {
                 deselectCurrentSelection();
                 Invalidate();
@@ -447,13 +444,13 @@ namespace Transonic.Patch
             {
                 if (selectedBox != null)
                 {
-                    removePatchBox(selectedBox, true);
+                    removePatchBox(selectedBox);
                     selectedBox = null;
                 }
 
                 if (selectedWire != null)
                 {
-                    removePatchWire(selectedWire, true);
+                    removePatchWire(selectedWire);
                     selectedWire = null;
                 }
             }
@@ -490,7 +487,7 @@ namespace Transonic.Patch
         {
             connecting = true;
             sourcePanel = panel;
-            connectWireStart = sourcePanel.ConnectionPoint;
+            connectWireStart = sourcePanel.ConnectionPoint();
             connectWireEnd = p;
             targetPanel = null;
             Invalidate();
@@ -540,7 +537,10 @@ namespace Transonic.Patch
             if (targetPanel != null)                              //drop connection on target box we are currently over
             {
                 targetPanel.patchbox.setTargeted(false);
-                PatchWire newWire = patchModel.getPatchWire(sourcePanel, targetPanel);    //create new wire & connect it to source & dest panels
+
+                //create new wire & connect it to source & dest panels
+                iPatchWire wireModel = patchModel.getPatchWire(sourcePanel.model, targetPanel.model);
+                PatchWire newWire = new PatchWire(sourcePanel, targetPanel, wireModel);    
                 addPatchWire(newWire);
             }
 
@@ -579,89 +579,17 @@ namespace Transonic.Patch
                 g.DrawLine(Pens.Red, connectWireStart, connectWireEnd);
             }
         }
-
-        //- persistance ---------------------------------------------------------------
-
-        public void loadPatch(string patchFilename)
-        {
-            clearPatch();       //start with a clean slate
-
-            EnamlData data = EnamlData.loadFromFile(patchFilename);
-
-            patchModel.loadPatchData(data);       //load model specific data from the patch file
-
-            //temporary dict for mapping a name to its patch box after it's been added to the canvas
-            Dictionary<String, PatchBox> boxDict = new Dictionary<string, PatchBox>();
-
-            List<String> boxList = data.getPathKeys("boxes");
-            foreach (String boxName in boxList)
-            {
-                String boxPath = "boxes." + boxName;
-                PatchBox newBox = patchModel.loadPatchBox(data, boxPath);
-                int xpos = data.getIntValue(boxPath + ".x-pos", 0);
-                int ypos = data.getIntValue(boxPath + ".y-pos", 0);
-                addPatchBox(newBox, xpos, ypos);
-                boxDict.Add(newBox.title, newBox);                
-            }
-
-            List<String> wireList = data.getPathKeys("wires");
-            foreach (String wireName in wireList)
-            {
-                String wirePath = "wires." + wireName;
-                String srcBoxName = data.getStringValue(wirePath + ".source-box", "");
-                String srcPanelName = data.getStringValue(wirePath + ".source-panel", "");
-                PatchBox srcBox = boxDict[srcBoxName];
-                PatchPanel srcPanel = srcBox.getPanel(srcPanelName);
-
-                String destBoxName = data.getStringValue(wirePath + ".dest-box", "");
-                String destPanelName = data.getStringValue(wirePath + ".dest-panel", "");
-                PatchBox destBox = boxDict[destBoxName];
-                PatchPanel destPanel = destBox.getPanel(destPanelName);
-
-                //create new wire & connect it to source & dest panels
-                PatchWire newWire = patchModel.loadPatchWire(data, wirePath, srcPanel, destPanel);    
-                addPatchWire(newWire);
-            }
-        }
-
-        public void savePatch(string patchFilename)
-        {
-            EnamlData data = new EnamlData();
-
-            patchModel.savePatchData(data);       //store model specific data from the patch file
-
-            int count = 1;
-            foreach (PatchBox box in boxList)
-            {
-                String boxPath = "boxes.box-" + count.ToString().PadLeft(3, '0');
-                patchModel.savePatchBox(data, boxPath, box);
-                data.setIntValue(boxPath + ".x-pos", box.getPos().X);
-                data.setIntValue(boxPath + ".y-pos", box.getPos().Y);
-                count++;
-            }
-
-            count = 1;
-            foreach (PatchWire wire in wireList)
-            {
-                String wirePath = "wires.wire-" + count.ToString().PadLeft(3, '0');
-                patchModel.savePatchWire(data, wirePath, wire);
-                data.setStringValue(wirePath + ".source-box", wire.srcPanel.patchbox.title);
-                data.setStringValue(wirePath + ".source-panel", wire.srcPanel.panelName);
-                data.setStringValue(wirePath + ".dest-box", wire.destPanel.patchbox.title);
-                data.setStringValue(wirePath + ".dest-panel", wire.destPanel.panelName);
-                count++;
-            }
-
-            data.saveToFile(patchFilename);
-        }
     }
 
-    public class PatchLoadException : Exception
-    {
-    }
+    //- model interface -------------------------------------------------------
 
-    public class PatchSaveException : Exception
+    public interface IPatchModel
     {
+        //allow the backing model to create a patch unit using the model name stored in palette item's tag field
+        iPatchBox getPatchBox(String modelName);
+
+        //allow the backing model to create a patch wire model and connect it to source & dest panels in the model
+        iPatchWire getPatchWire(iPatchPanel source, iPatchPanel dest);
     }
 }
 
