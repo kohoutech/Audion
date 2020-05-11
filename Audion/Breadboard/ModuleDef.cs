@@ -1,6 +1,6 @@
 ﻿/* ----------------------------------------------------------------------------
 Audion : a audio plugin creator
-Copyright (C) 2011-2018  George E Greaney
+Copyright (C) 2011-2020  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,7 +24,31 @@ using System.Text;
 
 namespace Audion.Breadboard
 {
-    public class ModuleJack
+    public class ModuleDef
+    {
+        public String name;
+        public List<ModuleParameter> paramList;
+
+        public static ModuleDef loadModuleDef(String filename)
+        {
+            return null;
+        }
+
+        public ModuleDef(String _name)
+        {
+            name = _name;
+            paramList = new List<ModuleParameter>();
+        }
+
+        public void addParameter(ModuleParameter param)
+        {
+            paramList.Add(param);
+        }
+    }
+
+    //-------------------------------------------------------------------------
+
+    public class ModuleParameter
     {
         public enum DIRECTION
         {
@@ -32,13 +56,25 @@ namespace Audion.Breadboard
             OUT
         }
 
-        public String name;
+        public string name;
         public DIRECTION dir;
 
-        public ModuleJack(String _name, DIRECTION _dir)
+        public ModuleParameter(String _name, DIRECTION _dir)
         {
             name = _name;
             dir = _dir;
+        }
+    }
+
+    //-------------------------------------------------------------------------
+
+    public class ListParameter : ModuleParameter
+    {
+        public List<String> paramList;
+
+        public ListParameter(String _name, DIRECTION _dir, List<String> _paramList) : base(_name, _dir)
+        {
+            paramList = _paramList;
         }
     }
 }

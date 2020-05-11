@@ -1,6 +1,6 @@
 ﻿/* ----------------------------------------------------------------------------
 Audion : a audio plugin creator
-Copyright (C) 2011-2018  George E Greaney
+Copyright (C) 2011-2020  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -22,22 +22,72 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+using Transonic.Patch;
+
 namespace Audion.Breadboard
 {
-    public class Module
+    public class Module : IPatchBox
     {
+        public ModuleDef def;
+        public AudionPatch patch;
         public String name;
-        public List<ModuleJack> jacks;
+        public List<ModulePanel> panels;
 
+        //cons for builtin control modules, it's cons will add its own panels
         public Module(String _name)
         {
+            patch = null;
+            def = null;
             name = _name;
-            jacks = new List<ModuleJack>();
+            panels = new List<ModulePanel>();
         }
 
-        public void addJack(ModuleJack jack) 
+        //cons for modules loaded from module definitions
+        public Module(ModuleDef _def)
         {
-            jacks.Add(jack);
+            patch = null;
+            def = _def;
+            name = def.name;
+            panels = new List<ModulePanel>();
+            foreach(ModuleParameter parm in def.paramList)
+            {
+                JackPanel jack = new JackPanel(this, parm);
+                panels.Add(jack);
+            }
+        }
+
+        public void addPanel(ModulePanel panel) 
+        {
+            panels.Add(panel);
+        }
+
+        //- view interface methods --------------------------------------------
+
+        public string getTitle()
+        {
+            return name;
+        }
+
+        public int getWidth()
+        {
+            return AudionPatch.MODULEWIDTH;
+        }
+
+        public List<IPatchPanel> getPanels()
+        {
+            return panels.Cast<IPatchPanel>().ToList();
+        }
+
+        public void remove()
+        {
+            if (patch != null)
+            {
+                patch.remove(this);
+            }
+        }
+
+        public void titleDoubleClick()
+        {            
         }
     }
 }
