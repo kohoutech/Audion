@@ -1,9 +1,6 @@
 ﻿/* ----------------------------------------------------------------------------
-Tidepool : a C compiler
- 
-based on Fabrice Bellard's Tiny C compiler
-
-Copyright (C) 2018-2020  George E Greaney
+Audion : a audio plugin creator
+Copyright (C) 2011-2020  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,25 +21,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.IO;
 
-namespace TidepoolD
+//If this is Tuesday, it must be Weld...
+
+namespace Audion.Tidepool
 {
-    class Program
+    class Weld
     {
-        const string sourceName = "testA.c";
-
-        //test driver
-        static void Main(string[] args)
-        {
-            Tidepool tp = new Tidepool();
-            String sourcecode = File.ReadAllText(sourceName);
-            tp.compileCode(sourcecode);
-            tp.link.outputFile("test.o");
-            Console.Out.WriteLine("done.");
-
-            //Parser parser = new Parser();
-            //parser.ParseCode("5+6-3+7");
-        }
     }
 }

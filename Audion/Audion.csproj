@@ -58,7 +58,7 @@
     </Compile>
     <Compile Include="Breadboard\AudionPatch.cs" />
     <Compile Include="Breadboard\ModulePanel.cs" />
-    <Compile Include="Workbench\Compiler.cs" />
+    <Compile Include="Tidepool\AIL.cs" />
     <Compile Include="ENAML\EnamlData.cs" />
     <Compile Include="Fast\Scanner.cs" />
     <Compile Include="Breadboard\PatchCord.cs" />
@@ -89,6 +89,9 @@
     <Compile Include="Patch\PatchWire.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Tidepool\Forge.cs" />
+    <Compile Include="Tidepool\TidepoolE.cs" />
+    <Compile Include="Tidepool\Weld.cs" />
     <Compile Include="UI\KnobControl.cs" />
     <Compile Include="UI\ListSelectControl.cs" />
     <Compile Include="Breadboard\ModuleDef.cs" />
