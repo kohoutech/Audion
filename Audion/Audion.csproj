@@ -58,6 +58,7 @@
     </Compile>
     <Compile Include="Breadboard\AudionPatch.cs" />
     <Compile Include="Breadboard\ModulePanel.cs" />
+    <Compile Include="Settings.cs" />
     <Compile Include="Tidepool\AIL.cs" />
     <Compile Include="ENAML\EnamlData.cs" />
     <Compile Include="Fast\Scanner.cs" />
@@ -92,6 +93,8 @@
     <Compile Include="Tidepool\Forge.cs" />
     <Compile Include="Tidepool\TidepoolE.cs" />
     <Compile Include="Tidepool\Weld.cs" />
+    <Compile Include="UI\ButtonControl.cs" />
+    <Compile Include="UI\KeyboardControl.cs" />
     <Compile Include="UI\KnobControl.cs" />
     <Compile Include="UI\ListSelectControl.cs" />
     <Compile Include="Breadboard\ModuleDef.cs" />
@@ -105,6 +108,13 @@
     <Compile Include="Widget\Knob.cs">
       <SubType>UserControl</SubType>
     </Compile>
+    <Compile Include="WIN32\ExportTable.cs" />
+    <Compile Include="WIN32\FileIO.cs" />
+    <Compile Include="WIN32\ImportTable.cs" />
+    <Compile Include="WIN32\ResourceTable.cs" />
+    <Compile Include="WIN32\Section.cs" />
+    <Compile Include="WIN32\Win32Exe.cs" />
+    <Compile Include="WIN32\Win32Obj.cs" />
     <EmbeddedResource Include="AudionWindow.resx">
       <DependentUpon>AudionWindow.cs</DependentUpon>
     </EmbeddedResource>

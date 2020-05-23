@@ -1,6 +1,6 @@
 ﻿/* ----------------------------------------------------------------------------
-Origami ENAML Library
-Copyright (C) 2019  George E Greaney
+Kohoutech ENAML Library
+Copyright (C) 2019-2020  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -17,7 +17,9 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 ----------------------------------------------------------------------------*/
 
-//ENAML - (just what) Everybody Needs - Another Markup Language 
+//ENAML - (just what) Everybody Needs - Another Markup Language
+
+//version 1.0.0 
 
 using System;
 using System.Collections.Generic;
@@ -25,19 +27,41 @@ using System.Linq;
 using System.Text;
 using System.IO;
 
-namespace Origami.ENAML
+namespace Kohoutech.ENAML
 {
     public class EnamlData
     {
-        SettingsStem root;
+        const int INDENTSIZE = 2;
+
+        ENAMLStem root;
+        int indentSize = INDENTSIZE;
+        String indentStr = "  ";
 
         public EnamlData()
         {
-            root = null;
+            root = new ENAMLStem("root");
         }
 
-        //- reading in --------------------------------------------------------
+        //indent defaults to two spaces, but user can make this wider
+        public void setIndentSize(int size)
+        {
+            if (size != indentSize && size >= INDENTSIZE)
+            {
+                indentSize = size;
+                String s = "";
+                for (int i = 0; i < indentSize; i++)
+                {
+                    s += " ";
+                }
+                indentStr = s;
+            }            
+        }
 
+        //---------------------------------------------------------------------
+        // READING IN
+        //---------------------------------------------------------------------
+
+        //load & parse ENAML data from file into tree of stems & leaves
         public static EnamlData loadFromFile(String filename)
         {
             EnamlData enaml = null;
@@ -48,25 +72,20 @@ namespace Origami.ENAML
             }
             catch (Exception e)
             {
-                return enaml;
+                throw new ENAMLReadException(e.Message);
             }
+
+            int lineNum = 0;
             enaml = new EnamlData();
-            enaml.parseRoot(lines);
+            enaml.root = enaml.parseSubtree(lines, ref lineNum, "root");
             return enaml;
         }
 
         char[] wspace = new char[] { ' ' };
 
-        //no error checking yet!
-        private void parseRoot(string[] lines)
+        private ENAMLStem parseSubtree(string[] lines, ref int lineNum, string path)
         {
-            int lineNum = 0;
-            root = parseSubtree(lines, ref lineNum);
-        }
-
-        private SettingsStem parseSubtree(string[] lines, ref int lineNum)
-        {
-            SettingsStem curStem = new SettingsStem();
+            ENAMLStem curStem = new ENAMLStem(path);
             int indentLevel = -1;
             while (lineNum < lines.Length)
             {
@@ -83,21 +102,22 @@ namespace Origami.ENAML
                 if (indent < indentLevel)
                 {
                     lineNum--;              //this line is not in subgroup so back up one line
-                    return curStem;
+                    return curStem;         //and we're done with this level, go back to parent
                 }
                 else
                 {
                     line = line.TrimStart(wspace);                              //we have the indent count, remove the leading spaces
                     int colonpos = line.IndexOf(':');
                     String name = line.Substring(0, colonpos).Trim();
-                    if (colonpos + 1 != line.Length)                                //nnn : xxx
+                    String subpath = path + "." + name;
+                    if (colonpos + 1 != line.Length)                            //nnn : xxx
                     {
                         String val = line.Substring(colonpos + 1).Trim();
-                        curStem.children.Add(name, new SettingsLeaf(val));
+                        curStem.children.Add(name, new ENAMLLeaf(subpath, val));
                     }
                     else
                     {
-                        SettingsStem substem = parseSubtree(lines, ref lineNum);
+                        ENAMLStem substem = parseSubtree(lines, ref lineNum, subpath);   //nnn :  - start of a subgroup
                         curStem.children.Add(name, substem);
                     }
                 }
@@ -107,42 +127,11 @@ namespace Origami.ENAML
 
         //- getting values ----------------------------------------------------
 
-        private String findLeafValue(String path, SettingsStem subtree)
-        {
-            String result = null;
-            int dotpos = path.IndexOf('.');
-            if (dotpos != -1)                                   //path is name.subpath
-            {
-                String name = path.Substring(0, dotpos);
-                String subpath = path.Substring(dotpos + 1);    //break path apart
-                if (subtree.children.ContainsKey(name))
-                {
-                    SettingsNode val = subtree.children[name];
-                    if (val != null && val is SettingsStem)
-                    {
-                        result = findLeafValue(subpath, (SettingsStem)val);
-                    }
-                }
-            }
-            else
-            {
-                if (subtree.children.ContainsKey(path))
-                {
-                    SettingsNode leaf = subtree.children[path];
-                    if (leaf != null && leaf is SettingsLeaf)
-                    {
-                        result = ((SettingsLeaf)leaf).value;
-                    }
-                }
-            }
-            return result;
-        }
-
         public String getStringValue(String path, String defval)
         {
             if (root != null)
             {
-                String strval = findLeafValue(path, root);
+                String strval = findLeafValue(path);
                 if (strval != null)
                 {
                     return strval;
@@ -155,7 +144,7 @@ namespace Origami.ENAML
         {
             if (root != null)
             {
-                String intstr = findLeafValue(path, root);
+                String intstr = findLeafValue(path);
                 if (intstr != null)
                 {
                     try
@@ -164,106 +153,201 @@ namespace Origami.ENAML
                         return intval;
                     }
                     catch (Exception e)
-                    {                        
+                    {
+                        throw new ENAMLFormatException("Error reading integer value from ENAML data");
                     }
                 }
             }
             return defval;
         }
 
-        private void getSubpathKeys(SettingsStem subtree, String path, List<String> keyList)
+        public double getFloatValue(String path, double defval)
         {
-            if (subtree == null) return;
-
-            int dotpos = path.IndexOf('.');
-            if (dotpos != -1)                                   //not at end of path - path is name.subpath
+            if (root != null)
             {
-                String name = path.Substring(0, dotpos);
-                String subpath = path.Substring(dotpos + 1);              //remove name from start of path
-                if (subtree.children.ContainsKey(name))
+                String floatstr = findLeafValue(path);
+                if (floatstr != null)
                 {
-                    SettingsNode val = subtree.children[name];
-                    if (val != null && val is SettingsStem)
+                    try
                     {
-                        getSubpathKeys((SettingsStem)val, subpath, keyList);
+                        double floatval = Double.Parse(floatstr);
+                        return floatval;
+                    }
+                    catch (Exception e)
+                    {
+                        throw new ENAMLFormatException("Error reading float value from ENAML data");
                     }
                 }
             }
-            else
-            {
-                if (subtree.children.ContainsKey(path))      //at end of path
-                {
-                    SettingsNode val = subtree.children[path];
-                    if (val != null && val is SettingsStem)
-                    {
-                        foreach (string key in ((SettingsStem)val).children.Keys)
-                        {
-                            keyList.Add(key);
-                        }
-                    }
-                }
-            }            
+            return defval;
         }
 
-        //returns an empty list if the path is invalid
+        public bool getBoolValue(String path, bool defval)
+        {
+            if (root != null)
+            {
+                String strval = findLeafValue(path);
+                if (strval != null)
+                {
+                    if (strval.ToUpper().Equals("TRUE"))
+                    {
+                        return true;
+                    }
+                    else if (strval.ToUpper().Equals("FALSE"))
+                    {
+                        return false;
+                    }
+                }
+            }
+            return defval;
+        }
+
+        //- path management ---------------------------------------------------
+
+        //check if the path actually exists
+        public bool doesPathExist(String path)
+        {
+            int endpos = path.LastIndexOf('.');
+            if (endpos != -1)                                           //if we have a path xxx.yyy.zzz
+            {
+                string subpath = path.Substring(0, endpos);             //get the xxx.yyy part
+                ENAMLStem stem = getSubPath(subpath);                   //and find the stem node for that path
+                if (stem != null)
+                {
+                    string childname = path.Substring(endpos + 1);
+                    return (stem.children.ContainsKey(childname));         //then check if it has zzz node (stem or leaf)
+                }                
+            }
+            else
+            {
+                return root.children.ContainsKey(path);       //if we just have xxx, then check if child of root
+            }
+            return false;            
+        }
+
+        //returns an empty list if the path is invalid or ends in a leaf (ie has no children)
+        //that way you can do a foreach loop on the list w/o first having to test for a null return val
         public List<String> getPathKeys(String path)
         {
-            List<string> keyList = new List<String>();
-            getSubpathKeys(root, path, keyList);
+            List<String> keyList = new List<string>();
+
+            ENAMLStem subpath = getSubPath(path);
+
+            if (subpath != null)
+            {
+                foreach (string key in subpath.children.Keys)
+                {
+                    keyList.Add(key);
+                }
+            }
+
             return keyList;
         }
 
-        //- setting values ----------------------------------------------------
-
-        private void setLeafValue(String path, SettingsStem subtree, String val)
+        //removes stem & leaf nodes below end of supplied path AND works back up the path 
+        //removing all stem nodes that don't have other leaf nodes
+        //returns true if path removed, false if path was invalid
+        public bool removePath(string path)
         {
-            int dotpos = path.IndexOf('.');
-            if (dotpos != -1)                                                           //path is name.subpath
+            if (!doesPathExist(path))
             {
-                String name = path.Substring(0, dotpos);
-                String subpath = path.Substring(dotpos + 1);
-                if (!subtree.children.ContainsKey(name))
+                return false;
+            }
+
+            int leafpos = path.LastIndexOf('.');
+            string leafname = path.Substring(leafpos + 1);
+            path = path.Substring(0, leafpos);                      //split aaa.bbb.ccc.ddd into aaa.bbb.ccc and ddd
+            removeSubPath(root, path, leafname);                    //remove subpath ddd, and any empty node before it
+            return true;
+        }
+
+        private void removeSubPath(ENAMLStem subpath, string path, string endName)
+        {
+            if (path.Length == 0)
+            {
+                if (subpath != null && subpath.children.ContainsKey(endName))
                 {
-                    subtree.children[name] = new SettingsStem();
+                    subpath.children.Remove(endName);           //from the example above. we're at ccc now, so remove ddd
                 }
-                setLeafValue(subpath, (SettingsStem)subtree.children[name], val);
             }
             else
             {
-                if (!subtree.children.ContainsKey(path))
+                int pathpos = path.IndexOf('.');                
+                string name = (pathpos != -1) ? path.Substring(0, pathpos) : path;      //split aaa.bbb.ccc into aaa and bbb.ccc
+                string rest = (pathpos != -1) ? path.Substring(pathpos + 1) : "";
+                ENAMLStem node = (ENAMLStem)subpath.children[name];                     //get node aaa
+                removeSubPath(node, rest, endName);                                     //and remove subpath ddd from bbb.ccc (etc...)
+                if (node.children.Count == 0)                       //if aaa has no children now
                 {
-                    subtree.children[path] = new SettingsLeaf(val);
+                    subpath.children.Remove(name);                  //then remove it too
+                }
+            }
+        }
+
+        char[] sep = new char[] { '.' };
+
+        //gets stem node at end of a subpath (a path with the ending leaf node removed)
+        private ENAMLStem getSubPath(String path)
+        {
+            string[] parts = path.Split(sep);                   //split xxx.yyy.zzz into (xxx, yyy, zzz)
+            ENAMLNode subtree = root;
+            for (int i = 0; i < parts.Length; i++)
+            {
+                string name = parts[i];
+                if ((subtree is ENAMLStem) && (((ENAMLStem)subtree).children.ContainsKey(name)))
+                {
+                    subtree = ((ENAMLStem)subtree).children[name];
                 }
                 else
                 {
-                    ((SettingsLeaf)subtree.children[path]).value = val;
+                    return null;
                 }
             }
-        }
-
-        public void setStringValue(String path, String str)
-        {
-            if (root == null)
+            if (subtree is ENAMLStem)               //last node in subpath has to be a stem node
             {
-                root = new SettingsStem();
+                return (ENAMLStem)subtree;
             }
-            setLeafValue(path, root, str);
+            return null;
         }
 
-
-        public void setIntValue(String path, int val)
+        //gets the string from a leaf node at end of a path
+        private String findLeafValue(String path)
         {
-            String intstr = val.ToString();
-            if (root == null)
+            String result = null;
+
+            String leafname = "";
+            ENAMLStem subpath = null;
+
+            int leafpos = path.LastIndexOf('.');
+            if (leafpos != -1)
             {
-                root = new SettingsStem();
+                leafname = path.Substring(leafpos + 1);     //split the leaf node name from the end of the path
+                path = path.Substring(0, leafpos);
+                subpath = getSubPath(path);                 //get stem node that is parent to this leaf node
             }
-            setLeafValue(path, root, intstr);
+            else
+            {
+                leafname = path;
+                subpath = root;
+            }
+
+            if ((subpath != null) && (subpath.children.ContainsKey(leafname)))
+            {
+                ENAMLNode leaf = subpath.children[leafname];        //then get the leaf node child
+                if (leaf != null && leaf is ENAMLLeaf)              //these should both be true, check anyway
+                {
+                    result = ((ENAMLLeaf)leaf).value;               //and return it's value
+                }
+            }
+
+            return result;
         }
 
-        //- storing out ------------------------------------------------
+        //---------------------------------------------------------------------
+        // WRITING OUT
+        //---------------------------------------------------------------------
 
-        public bool saveToFile(String filename)
+        public void saveToFile(String filename)
         {
             List<String> lines = new List<string>();
             storeSubTree(lines, root, "");
@@ -273,59 +357,167 @@ namespace Origami.ENAML
             }
             catch (Exception e)
             {
-                return false;
-            }
-            return true;
+                throw new ENAMLWriteException(e.Message);
+            }            
         }
 
-        private void storeSubTree(List<string> lines, SettingsStem stem, String indent)
+        private void storeSubTree(List<string> lines, ENAMLStem stem, String indent)
         {
             List<string> childNameList = new List<string>(stem.children.Keys);
             foreach (String childname in childNameList)
             {
-                storeNode(lines, stem.children[childname], indent + ((stem != root) ? "  " : ""), childname);
+                storeNode(lines, stem.children[childname], indent, childname);
             }
         }
 
-        private void storeNode(List<string> lines, SettingsNode node, String indent, String name)
+        private void storeNode(List<string> lines, ENAMLNode node, String indent, String name)
         {
             String line = indent + name + ":";
-            if (node is SettingsLeaf)
+            if (node is ENAMLLeaf)
             {
-                lines.Add(line + " " + ((SettingsLeaf)node).value);
+                lines.Add(line + " " + ((ENAMLLeaf)node).value);
             }
             else
             {
                 lines.Add(line);
-                storeSubTree(lines, (SettingsStem)node, indent);
+                storeSubTree(lines, (ENAMLStem)node, indent + indentStr);
+            }
+        }
+
+        //- setting values ----------------------------------------------------
+
+        public void setStringValue(String path, String str)
+        {
+            setLeafValue(path, root, str);
+        }
+        
+        public void setIntValue(String path, int val)
+        {
+            String intstr = val.ToString();
+            setLeafValue(path, root, intstr);
+        }
+
+        public void setFloatValue(String path, double val)
+        {
+            String floatstr = val.ToString("G17");
+            setLeafValue(path, root, floatstr);
+        }
+
+        public void setBoolValue(String path, bool val)
+        {
+            String boolstr = val ? "true" : "false";
+            setLeafValue(path, root, boolstr);
+        }
+
+        private void setLeafValue(String path, ENAMLStem subtree, String val)
+        {
+            int dotpos = path.IndexOf('.');
+            if (dotpos != -1)                                                           //path is name.subpath
+            {
+                String name = path.Substring(0, dotpos);
+                String subpath = path.Substring(dotpos + 1);
+                if (!subtree.children.ContainsKey(name))
+                {
+                    subtree.children[name] = new ENAMLStem(subtree.fullpath + '.' + name);
+                }
+                setLeafValue(subpath, (ENAMLStem)subtree.children[name], val);
+            }
+            else
+            {
+                if (!subtree.children.ContainsKey(path))
+                {
+                    subtree.children[path] = new ENAMLLeaf(subtree.fullpath + '.' + path, val);
+                }
+                else
+                {
+                    ENAMLNode pathend = subtree.children[path];         //last node in a path has to be a leaf node
+                    if (pathend is ENAMLLeaf)
+                    {
+                        ((ENAMLLeaf)pathend).value = val;               //to (re)store val in
+                    }
+                    else
+                    {
+                        throw new ENAMLPathException("path [" + pathend.fullpath + "is not an endpoint");
+                    }
+                }
             }
         }
 
         //- internal tree node classes -----------------------------------------------------
 
         //base class
-        private class SettingsNode
+        private class ENAMLNode
         {
-        }
+            public string fullpath;
 
-        private class SettingsStem : SettingsNode
-        {
-            public Dictionary<string, SettingsNode> children;
-
-            public SettingsStem()
+            public ENAMLNode(string path)
             {
-                children = new Dictionary<string, SettingsNode>();
+                fullpath = path;
             }
         }
 
-        private class SettingsLeaf : SettingsNode
+        private class ENAMLStem : ENAMLNode
+        {
+            public Dictionary<string, ENAMLNode> children;
+
+            public ENAMLStem(string path) : base(path)
+            {
+                children = new Dictionary<string, ENAMLNode>();
+            }
+        }
+
+        private class ENAMLLeaf : ENAMLNode
         {
             public String value;
 
-            public SettingsLeaf(String val)
+            public ENAMLLeaf(string path, String val) : base(path)
             {
                 value = val;
             }
         }
     }
+
+    //- exceptions ------------------------------------------------------------
+
+    //base class - if you don't want a more specific detail as to what went wrong
+    public class ENAMLException : Exception
+    {
+        public ENAMLException(String msg)
+            : base(msg)
+        {
+        }
+    }
+
+    public class ENAMLReadException : ENAMLException
+    {
+        public ENAMLReadException(String msg)
+            : base(msg)
+        {
+        }
+    }
+
+    public class ENAMLWriteException : ENAMLException
+    {
+        public ENAMLWriteException(String msg)
+            : base(msg)
+        {
+        }
+    }
+
+    public class ENAMLFormatException : ENAMLException
+    {
+        public ENAMLFormatException(String msg)
+            : base(msg)
+        {
+        }
+    }
+
+    public class ENAMLPathException : ENAMLException
+    {
+        public ENAMLPathException(String msg)
+            : base(msg)
+        {
+        }
+    }
+
 }
