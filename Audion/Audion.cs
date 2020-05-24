@@ -1,6 +1,6 @@
 ﻿/* ----------------------------------------------------------------------------
 Audion : a audio plugin creator
-Copyright (C) 2011-2018  George E Greaney
+Copyright (C) 2011-2020  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -22,6 +22,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+using Kohoutech.Patch;
+
 using Audion.Breadboard;
 using Audion.UI;
 
@@ -29,86 +31,85 @@ namespace Audion
 {
     public class Audion
     {
-        public void initModuleMenu(AudionWindow window)
-        {
-            //modules
-            window.addModuleToMenu("Oscillator");
-            window.addModuleToMenu("Filter");
-            window.addModuleToMenu("Env Gen");
-            window.addModuleToMenu("VCA");
-            window.addModuleToMenu("Audio Out");
+        public AudionWindow window;
+        public PatchCanvas canvas;
+        public AudionPatch patch;
 
-            //controls
-            window.addModuleToMenu("Knob");
-            window.addModuleToMenu("List");
+        public Dictionary<string, ModuleDef> moduleDefs;
+
+        public Audion(AudionWindow _window)
+        {
+            window = _window;
+            canvas = window.canvas;
+
+            loadModuleDefinitions();
+
+            patch = new AudionPatch(this);
+            canvas.setPatch(patch);
         }
 
-        public Module addModuleToPatch(String modName)
+        //- module management -------------------------------------------------
+
+        public void loadModuleDefinitions()
         {
-            Module mod = null;
+            moduleDefs = new Dictionary<string, ModuleDef>();
 
-            switch (modName)
+            //groups
+            canvas.addPaletteGroup("modules");
+
+            foreach (String moduleFilename in window.settings.moduleFiles)
             {
-                case "Oscillator":
-                    {
-                        mod = new Module("Oscillator");
-                        mod.addJack(new ModuleJack("Freq", ModuleJack.DIRECTION.IN));
-                        mod.addJack(new ModuleJack("Shape", ModuleJack.DIRECTION.IN));
-                        mod.addJack(new ModuleJack("Out", ModuleJack.DIRECTION.OUT));
-                        break;
-                    }
-                case "Filter":
-                    {
-                        mod = new Module("Filter");
-                        mod.addJack(new ModuleJack("In", ModuleJack.DIRECTION.IN));
-                        mod.addJack(new ModuleJack("Cutoff", ModuleJack.DIRECTION.IN));
-                        mod.addJack(new ModuleJack("Resonance", ModuleJack.DIRECTION.IN));
-                        mod.addJack(new ModuleJack("Out", ModuleJack.DIRECTION.OUT));
-                        break;
-                    }
-                case "Env Gen":
-                    {
-                        mod = new Module("Env Gen");
-                        mod.addJack(new ModuleJack("Attack", ModuleJack.DIRECTION.IN));
-                        mod.addJack(new ModuleJack("Decay", ModuleJack.DIRECTION.IN));
-                        mod.addJack(new ModuleJack("Sustain", ModuleJack.DIRECTION.IN));
-                        mod.addJack(new ModuleJack("Release", ModuleJack.DIRECTION.IN));
-                        mod.addJack(new ModuleJack("Out", ModuleJack.DIRECTION.OUT));
-                        break;
-                    }
-                case "VCA":
-                    {
-                        mod = new Module("VCA");
-                        mod.addJack(new ModuleJack("In", ModuleJack.DIRECTION.IN));
-                        mod.addJack(new ModuleJack("Amount", ModuleJack.DIRECTION.IN));
-                        mod.addJack(new ModuleJack("Out", ModuleJack.DIRECTION.OUT));
-                        break;
-                    }
-                case "Audio Out":
-                    {
-                        mod = new Module("Audio Out");
-                        mod.addJack(new ModuleJack("Left", ModuleJack.DIRECTION.IN));
-                        mod.addJack(new ModuleJack("Right", ModuleJack.DIRECTION.IN));
-                        break;
-                    }
-
-                //controls
-                case "Knob":
-                    {
-                        mod = new Module("Knob");
-                        mod.addJack(new ModuleJack("Out", ModuleJack.DIRECTION.OUT));
-                        break;
-                    }
-                case "List":
-                    {
-                        mod = new Module("List");
-                        mod.addJack(new ModuleJack("Out", ModuleJack.DIRECTION.OUT));
-                        break;
-                    }
+                string filename = window.settings.modPath + "\\" + moduleFilename;
+                ModuleDef def = ModuleDef.loadModuleDef(filename);
+                moduleDefs.Add(def.name, def);
+                canvas.addPaletteItem("modules", def.name, def.name);
             }
 
-            return mod;
+            //built in modules
+            canvas.addPaletteItem("modules", "Audio Out", "AudioOut");
+            canvas.addPaletteItem("modules", "Audio In", "AudioIn");
+
+            //controls - don't have defintions
+            canvas.addPaletteGroup("controls");
+            canvas.addPaletteItem("controls", "Button", "Button");
+            canvas.addPaletteItem("controls", "Knob", "Knob");
+            canvas.addPaletteItem("controls", "List", "List");
+            canvas.addPaletteItem("controls", "Keyboard", "Keyboard");
         }
 
+        internal ModuleDef getModuleDef(string modName)
+        {
+            ModuleDef def = null;
+            if (moduleDefs.ContainsKey(modName))
+            {
+                def = moduleDefs[modName];
+            }
+            return def;
+        }
     }
 }
+
+////hard coding them for now
+//ModuleDef def = new ModuleDef("Oscillator");
+//def.addParameter(new ModuleParameter("Freq", ModuleParameter.DIRECTION.IN));
+//            def.addParameter(new ListParameter("Shape", ModuleParameter.DIRECTION.IN, new List<string>() { "SINE", "TRIANGLE", "SAW", "SQUARE" }));
+//            def.addParameter(new ModuleParameter("Out", ModuleParameter.DIRECTION.OUT));
+//            moduleDefs.Add("Oscillator", def);
+//            canvas.addPaletteItem("modules", def.name, "Oscillator");
+
+
+//            def = new ModuleDef("Env Gen");
+//def.addParameter(new ModuleParameter("Attack", ModuleParameter.DIRECTION.IN));
+//            def.addParameter(new ModuleParameter("Decay", ModuleParameter.DIRECTION.IN));
+//            def.addParameter(new ModuleParameter("Sustain", ModuleParameter.DIRECTION.IN));
+//            def.addParameter(new ModuleParameter("Release", ModuleParameter.DIRECTION.IN));
+//            def.addParameter(new ModuleParameter("Out", ModuleParameter.DIRECTION.OUT));
+//            moduleDefs.Add("EnvGen", def);
+//            canvas.addPaletteItem("modules", def.name, "EnvGen");
+
+//            def = new ModuleDef("VCA");
+//def.addParameter(new ModuleParameter("In", ModuleParameter.DIRECTION.IN));
+//            def.addParameter(new ModuleParameter("Amount", ModuleParameter.DIRECTION.IN));
+//            def.addParameter(new ModuleParameter("Out", ModuleParameter.DIRECTION.OUT));
+//            moduleDefs.Add("VCA", def);
+//            canvas.addPaletteItem("modules", def.name, "VCA");

@@ -17,13 +17,13 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 ----------------------------------------------------------------------------*/
 
-using Origami.ENAML;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-using Transonic.Patch;
+using Kohoutech.ENAML;
+using Kohoutech.Patch;
 
 using Audion.UI;
 
@@ -72,12 +72,32 @@ namespace Audion.Breadboard
             Module module = null;
             switch (modName)
             {
+                //built-ins
+                case "AudioIn":
+                    module = new AudioIn();
+                    break;
+
+                case "AudioOut":
+                    module = new AudioOut();
+                    break;
+
+                //controls
+                case "Button":
+                    module = new ButtonControl();
+                    break;
+
                 case "Knob":
                     module = new KnobControl();
                     break;
+
                 case "List":
                     module = new ListSelectControl();
                     break;
+
+                case "Keyboard":
+                    module = new KeyboardControl();
+                    break;
+
                 default:
                     ModuleDef def = audion.getModuleDef(modName);
                     module = new Module(def);
