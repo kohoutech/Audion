@@ -22,7 +22,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-using Transonic.Patch;
+using Kohoutech.Patch;
 
 namespace Audion.Breadboard
 {
@@ -33,7 +33,7 @@ namespace Audion.Breadboard
         public String name;
         public List<ModulePanel> panels;
 
-        //cons for builtin control modules, it's cons will add its own panels
+        //cons for built-in modules, it's cons will add its own panels
         public Module(String _name)
         {
             patch = null;
@@ -48,11 +48,25 @@ namespace Audion.Breadboard
             patch = null;
             def = _def;
             name = def.name;
+
+            //add module panels
             panels = new List<ModulePanel>();
-            foreach(ModuleParameter parm in def.paramList)
+            for (int i = 0; i < def.inputCount; i++)
             {
-                JackPanel jack = new JackPanel(this, parm);
-                panels.Add(jack);
+                string inname = "In" + i.ToString();
+                AudioPanel inpanel = new AudioPanel(this, inname, JackPanel.DIRECTION.IN);
+                panels.Add(inpanel);
+            }
+            for (int i = 0; i < def.outputCount; i++)
+            {
+                string outname = "Out" + i.ToString();
+                AudioPanel outpanel = new AudioPanel(this, outname, JackPanel.DIRECTION.OUT);
+                panels.Add(outpanel);
+            }
+            foreach (ModuleParameter parm in def.paramList)
+            {
+                ParamPanel parampanel = new ParamPanel(this, parm);
+                panels.Add(parampanel);
             }
         }
 
@@ -90,4 +104,25 @@ namespace Audion.Breadboard
         {            
         }
     }
+
+    //- built-ins -------------------------------------------------------------
+
+    public class AudioIn : Module
+    {
+        public AudioIn() : base("Audio In")
+        {
+            addPanel(new AudioPanel(this, "In 1", JackPanel.DIRECTION.OUT));
+            addPanel(new AudioPanel(this, "In 2", JackPanel.DIRECTION.OUT));
+        }
+    }
+
+    public class AudioOut : Module
+    {
+        public AudioOut() : base("Audio Out")
+        {
+            addPanel(new AudioPanel(this, "Out 1", JackPanel.DIRECTION.IN));
+            addPanel(new AudioPanel(this, "Out 2", JackPanel.DIRECTION.IN));
+        }
+    }
+
 }

@@ -1,6 +1,6 @@
 ﻿/* ----------------------------------------------------------------------------
 Audion : a audio plugin creator
-Copyright (C) 2011-2017  George E Greaney
+Copyright (C) 2011-2020  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,85 +24,116 @@ using System.Windows.Forms;
 using System.Text;
 using System.Drawing;
 
-using Transonic.Patch;
+using Kohoutech.Patch;
 using Audion.Breadboard;
 
 namespace Audion.UI
 {
-    public class ListSelectControl : PatchBox
+    public class ListSelectControl : Module, IPatchBox
     {
-        Module module;
-        ListPanel panel;
+        public List<String> items;
+        public int curitem;
 
-        public ListSelectControl(Module _module)
-            : base()
+        public ListSelectControl() : base("List")
         {
-            module = _module;
-            title = "List";
-            addPanel(new ModulePanel(this, module.jacks[0]), false);
-            List<String> items = new List<string>() { "SINE", "TRIANGLE", "SAW", "SQUARE" };
-            panel = new ListPanel(this, items);
-            addPanel(panel, false);
-        }
-    }
+            JackPanel jack = new ListJackPanel(this);
+            panels.Add(jack);
+            ListPanel list = new ListPanel(this);
+            panels.Add(list);
 
-    public class ListPanel : PatchPanel
-    {
-        const int ITEMMARGIN = 10;
-        List<String> items;
-        int curitem;
-        Rectangle itemRect;
-
-        public ListPanel(PatchBox box, List<String> _items)
-            : base(box)
-        {
-            panelType = "ListPanel";
-            connType = CONNECTIONTYPE.NEITHER;
-            updateFrame(40, frameWidth);
-            itemRect = new Rectangle(frame.Left + ITEMMARGIN, frame.Top + ITEMMARGIN,
-                frame.Width - (ITEMMARGIN * 2), frame.Height - (ITEMMARGIN * 2));
-            items = _items;
+            items = null;
             curitem = 0;
         }
 
-        public override void setPos(int xOfs, int yOfs)
+        //public void remove()
+        //{            
+        //}
+    }
+
+    //-------------------------------------------------------------------------
+
+    public class ListJackPanel : JackPanel
+    {
+
+        public ListJackPanel(Module _module) : base(_module, "Out", JackPanel.DIRECTION.OUT)
         {
-            base.setPos(xOfs, yOfs);
-            itemRect.Offset(xOfs, yOfs);
         }
 
-        public override void onRightClick(Point pos)
+        public override void connect(PatchCord cord)
         {
-            ContextMenuStrip cm = new ContextMenuStrip();
-            cm.ItemClicked += new ToolStripItemClickedEventHandler(ItemsMenuClicked);
-            for (int i = 0; i < items.Count; i++)
+            base.connect(cord);
+            ModuleParameter dparm = ((ParamPanel)cord.dest).parm;
+            if (dparm != null && dparm is ListParameter)
             {
-                ToolStripButton item = new ToolStripButton(items[i]);
-                item.Checked = (i == curitem);
-                item.Tag = i;
-                cm.Items.Add(item);
+                ListParameter listparm = (ListParameter)dparm;
+                ((ListSelectControl)module).items = listparm.paramList;
+                ((ListSelectControl)module).curitem = 0;
             }
+        }
 
-            cm.Show(patchbox.canvas, pos);
+        public override void disconnect(PatchCord cord)
+        {
+            base.disconnect(cord);
+            ((ListSelectControl)module).items = null;
+            ((ListSelectControl)module).curitem = 0;
+        }
+    }
+
+    //-------------------------------------------------------------------------
+
+    public class ListPanel : ModulePanel, IPatchPanel
+    {
+        const int ITEMMARGIN = 10;
+
+        public ListPanel(ListSelectControl module) : base(module, "List")
+        {
+        }
+
+        //display list values in a popup menu over the list panel
+        public void click(Point pos)
+        {
+            if (((ListSelectControl)module).items != null)
+            {
+                ContextMenuStrip cm = new ContextMenuStrip();
+                cm.ItemClicked += new ToolStripItemClickedEventHandler(ItemsMenuClicked);
+                for (int i = 0; i < ((ListSelectControl)module).items.Count; i++)
+                {
+                    ToolStripButton item = new ToolStripButton(((ListSelectControl)module).items[i]);
+                    item.Checked = (i == ((ListSelectControl)module).curitem);
+                    item.Tag = i;
+                    cm.Items.Add(item);
+                }
+
+                cm.Show(module.patch.canvas, pos);
+            }
         }
 
         void ItemsMenuClicked(object sender, ToolStripItemClickedEventArgs e)
         {
             ToolStripButton item = (ToolStripButton)e.ClickedItem;
-            curitem = (Int32)item.Tag;
-            patchbox.canvas.Invalidate();            
+            ((ListSelectControl)module).curitem = (Int32)item.Tag;
+            module.patch.canvas.Invalidate();            
         }
 
 
-        public override void paint(Graphics g)
+        public void paint(Graphics g, Rectangle frame)
         {
-            base.paint(g);
-            g.FillRectangle(Brushes.White, itemRect);
-            RectangleF rect = new RectangleF(itemRect.Left, itemRect.Top, itemRect.Width, itemRect.Height);
+            //Rectangle itemRect = new Rectangle(frame.Left + ITEMMARGIN, frame.Top, frame.Width - (ITEMMARGIN * 2), frame.Height);
+            //g.FillRectangle(Brushes.White, itemRect);
+
+            //RectangleF rect = new RectangleF(itemRect.Left, itemRect.Top, itemRect.Width, itemRect.Height);
             StringFormat format = new StringFormat();
             format.Alignment = StringAlignment.Center;
             format.LineAlignment = StringAlignment.Center;
-            g.DrawString(items[curitem], SystemFonts.DefaultFont, Brushes.Black, rect, format);
+
+            if (((ListSelectControl)module).items != null)
+            {
+                g.DrawString(((ListSelectControl)module).items[((ListSelectControl)module).curitem], SystemFonts.DefaultFont, Brushes.Black, frame, format);
+            }
+            else
+            {
+                g.DrawString("---", SystemFonts.DefaultFont, Brushes.Black, frame, format);
+            }
         }
     }
 }

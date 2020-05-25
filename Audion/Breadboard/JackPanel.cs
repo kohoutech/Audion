@@ -23,20 +23,25 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 
-using Transonic.Patch;
+using Kohoutech.Patch;
 
 namespace Audion.Breadboard
 {
-    public class JackPanel : ModulePanel, IPatchPanel
+    //a module panel that has a connection jack
+    public class JackPanel : ModulePanel
     {
-        public ModuleParameter parm;
-        public ModuleParameter.DIRECTION dir;
+        public enum DIRECTION
+        {
+            IN,
+            OUT
+        }
+
+        public DIRECTION dir;
         public List<PatchCord> outs;
 
-        public JackPanel(Module _module, ModuleParameter _parm) : base(_module, _parm.name)
+        public JackPanel(Module _module, String name, JackPanel.DIRECTION _dir) : base(_module, name)
         {
-            parm = _parm;
-            dir = parm.dir;
+            dir = _dir;
             outs = new List<PatchCord>();
         }
 
@@ -50,48 +55,24 @@ namespace Audion.Breadboard
             outs.Remove(cord);
         }
 
-        public PatchPanel.CONNECTIONTYPE getConnType()
+        public override PatchPanel.CONNECTIONTYPE getConnType()
         {
-            return (dir == ModuleParameter.DIRECTION.IN) ? PatchPanel.CONNECTIONTYPE.DEST : PatchPanel.CONNECTIONTYPE.SOURCE;
+            return (dir == DIRECTION.IN) ? PatchPanel.CONNECTIONTYPE.DEST : PatchPanel.CONNECTIONTYPE.SOURCE;
         }
 
-        public Point connectionPoint()
+        public override Point connectionPoint()
         {
             int h = height / 2;
-            int w = (dir == ModuleParameter.DIRECTION.IN) ? 0 : width;
+            int w = (dir == DIRECTION.IN) ? 0 : width;
             return new Point(w, h);
         }
 
-        public bool canTrackMouse()
+        public override bool canTrackMouse()
         {
-            return (dir == ModuleParameter.DIRECTION.OUT);
+            return (dir == DIRECTION.OUT);
         }
 
-        public void mouseDown(Point pos)
-        {            
-        }
-
-        public void mouseMove(Point pos)
-        {           
-        }
-
-        public void mouseUp(Point pos)
-        {            
-        }
-
-        public void click(Point pos)
-        {           
-        }
-
-        public void rightClick(Point pos)
-        {           
-        }
-
-        public void doubleClick(Point pos)
-        {            
-        }
-
-        public void paint(Graphics g, Rectangle frame)
+        public override void paint(Graphics g, Rectangle frame)
         {
             //jack name & pos
             Font nameFont = SystemFonts.DefaultFont;
@@ -99,7 +80,7 @@ namespace Audion.Breadboard
             int centerY = frame.Top + (height / 2);
             int nameY = centerY - ((int)nameSize.Height / 2);
 
-            if (dir == ModuleParameter.DIRECTION.IN)
+            if (dir == DIRECTION.IN)
             {
                 g.DrawLine(Pens.Black, frame.Left, centerY, frame.Left + 5, centerY);
                 g.DrawString(name, nameFont, Brushes.Black, frame.Left + 7, nameY);
@@ -111,4 +92,28 @@ namespace Audion.Breadboard
             }
         }
     }
+
+    //-------------------------------------------------------------------------
+
+    public class AudioPanel : JackPanel
+    {
+        public AudioPanel(Module _module, String name, DIRECTION dir) : base(_module, name, dir)
+        {
+        }
+    }
+
+    //-------------------------------------------------------------------------
+
+        //a jack panel for controlling a module's parameters
+        //all param panels have in jacks
+    public class ParamPanel : JackPanel
+    {
+        public ModuleParameter parm;
+
+        public ParamPanel(Module _module, ModuleParameter _parm) : base(_module, _parm.name, DIRECTION.IN)
+        {
+            parm = _parm;
+        }
+    }
+
 }

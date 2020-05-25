@@ -108,6 +108,8 @@ namespace Audion.Breadboard
             return module;
         }
 
+        //create a patch cord and connect it to the source and dest jack panels
+        //then return it to the canvas so the panels will be connected on the canvas too
         public IPatchWire getPatchWire(IPatchPanel source, IPatchPanel dest)
         {
             PatchCord cord = null;
@@ -117,6 +119,5 @@ namespace Audion.Breadboard
             }
             return cord;
         }
-
     }
 }

@@ -66,8 +66,8 @@ namespace Audion
             }
 
             //built in modules
-            canvas.addPaletteItem("modules", "Audio Out", "AudioOut");
             canvas.addPaletteItem("modules", "Audio In", "AudioIn");
+            canvas.addPaletteItem("modules", "Audio Out", "AudioOut");
 
             //controls - don't have defintions
             canvas.addPaletteGroup("controls");

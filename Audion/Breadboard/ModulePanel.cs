@@ -23,7 +23,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 
-using Transonic.Patch;
+using Kohoutech.Patch;
 
 namespace Audion.Breadboard
 {
@@ -43,59 +43,61 @@ namespace Audion.Breadboard
             height = AudionPatch.PANELHEIGHT;
         }
 
-        public string getName()
+        //IPatchPanel methods -------------------------------------------------
+
+        public virtual string getName()
         {
             return name;
         }
 
-        public int getHeight()
+        public virtual int getHeight()
         {
             return height;
         }
 
-        public PatchPanel.CONNECTIONTYPE getConnType()
+        public virtual PatchPanel.CONNECTIONTYPE getConnType()
         {
             return PatchPanel.CONNECTIONTYPE.NEITHER;
         }
 
         //dummy value - since connection type is set to NEITHER, 
         //the patch canvas won't allow the user connect to it
-        public Point connectionPoint()
+        public virtual Point connectionPoint()
         {
             return new Point(0, 0);         
         }
 
         //response to mouse clicks by default, instead of down / move / up events
-        public bool canTrackMouse()
+        public virtual bool canTrackMouse()
         {
             return false;
         }
 
-        public void click(Point pos)
+        public virtual void click(Point pos)
         {            
         }
 
-        public void rightClick(Point pos)
+        public virtual void rightClick(Point pos)
         {            
         }
         
-        public void doubleClick(Point pos)
+        public virtual void doubleClick(Point pos)
         {            
         }
 
-        public void mouseDown(Point pos)
+        public virtual void mouseDown(Point pos)
         {            
         }
 
-        public void mouseMove(Point pos)
+        public virtual void mouseMove(Point pos)
         {            
         }
 
-        public void mouseUp(Point pos)
+        public virtual void mouseUp(Point pos)
         {            
         }
 
-        public void paint(Graphics g, Rectangle frame)
+        public virtual void paint(Graphics g, Rectangle frame)
         {
             
         }

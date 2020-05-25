@@ -42,6 +42,7 @@ namespace Audion.Breadboard
         public ModuleBlock dataBlock;
         public ModuleBlock bssBlock;
 
+        //load def obj from xxx.mod file
         public static ModuleDef loadModuleDef(String filename)
         {
             SourceFile modfile = new SourceFile(filename);
@@ -56,7 +57,7 @@ namespace Audion.Breadboard
             uint hdrsize = modfile.getFour();
             string name = modfile.getAsciiZString();
             ModuleDef def = new ModuleDef(name);
-            
+
             def.fullName = modfile.getAsciiZString();
             def.version = modfile.getAsciiZString();
             def.vendor = modfile.getAsciiZString();
@@ -65,31 +66,31 @@ namespace Audion.Breadboard
 
             //param list
             uint paramCount = modfile.getTwo();
-            for(int i = 0; i < paramCount; i++)
+            for (int i = 0; i < paramCount; i++)
             {
                 string paramname = modfile.getAsciiZString();
                 ModuleParameter.TYPE paramtype = (ModuleParameter.TYPE)modfile.getOne();
-                switch(paramtype)
+                switch (paramtype)
                 {
                     case ModuleParameter.TYPE.RANGE:
-                        ModuleParameter rangeparam = new ModuleParameter(paramname, ModuleParameter.DIRECTION.IN);
+                        ModuleParameter rangeparam = new ModuleParameter(paramname);
                         def.addParameter(rangeparam);
                         break;
 
                     case ModuleParameter.TYPE.ONOFF:
-                        ModuleParameter onoffparam = new ModuleParameter(paramname, ModuleParameter.DIRECTION.IN);
+                        OnOffParameter onoffparam = new OnOffParameter(paramname);
                         def.addParameter(onoffparam);
                         break;
 
                     case ModuleParameter.TYPE.LIST:
                         uint itemCount = modfile.getTwo();
                         List<String> itemList = new List<string>();
-                            for (int j = 0; j < itemCount; j++)
+                        for (int j = 0; j < itemCount; j++)
                         {
                             string itemname = modfile.getAsciiZString();
                             itemList.Add(itemname);
                         }
-                        ModuleParameter listparam = new ModuleParameter(paramname, ModuleParameter.DIRECTION.IN);
+                        ListParameter listparam = new ListParameter(paramname, itemList);
                         def.addParameter(listparam);
                         break;
 
@@ -100,7 +101,7 @@ namespace Audion.Breadboard
 
             //block list
             uint blockCount = modfile.getOne();
-            for(int i = 0; i < blockCount; i++)
+            for (int i = 0; i < blockCount; i++)
             {
                 //block header
                 string blockname = modfile.getAsciiZString();
@@ -117,7 +118,7 @@ namespace Audion.Breadboard
                 modfile.seek(block.addr);
                 block.data = modfile.getRange(block.size);
                 modfile.seek(importstart);
-                for(int j = 0; j < importcount; j++)
+                for (int j = 0; j < importcount; j++)
                 {
                     string importsym = modfile.getAsciiZString();
                     uint importaddr = modfile.getFour();
@@ -133,7 +134,7 @@ namespace Audion.Breadboard
                     block.exports.Add(export);
                 }
                 modfile.seek(mark);
-                switch(block.name)
+                switch (block.name)
                 {
                     case "CODE":
                         def.codeBlock = block;
@@ -171,36 +172,24 @@ namespace Audion.Breadboard
         {
             paramList.Add(param);
         }
-
-        internal static ModuleDef audioInModule()
-        {
-            //def = new ModuleDef("Audio Out");
-            //def.addParameter(new ModuleParameter("Left", ModuleParameter.DIRECTION.IN));
-            //def.addParameter(new ModuleParameter("Right", ModuleParameter.DIRECTION.IN));
-            //moduleDefs.Add("AudioOut", def);
-            //canvas.addPaletteItem("modules", def.name, "AudioOut");
-            return null;
-        }
     }
 
     //-------------------------------------------------------------------------
+    // PARAMETER CLASSES
+    //-------------------------------------------------------------------------
 
+    //base class
     public class ModuleParameter
     {
         public enum TYPE { RANGE, ONOFF, LIST };
-        public enum DIRECTION
-        {
-            IN,
-            OUT
-        }
 
         public string name;
-        public DIRECTION dir;
+        public TYPE typ;
 
-        public ModuleParameter(String _name, DIRECTION _dir)
+        public ModuleParameter(String _name)
         {
             name = _name;
-            dir = _dir;
+            typ = TYPE.RANGE;
         }
     }
 
@@ -209,8 +198,9 @@ namespace Audion.Breadboard
     public class OnOffParameter : ModuleParameter
     {
 
-        public OnOffParameter(String _name, DIRECTION _dir) : base(_name, _dir)
-        {            
+        public OnOffParameter(String _name) : base(_name)
+        {
+            typ = TYPE.ONOFF;
         }
     }
 
@@ -220,12 +210,16 @@ namespace Audion.Breadboard
     {
         public List<String> paramList;
 
-        public ListParameter(String _name, DIRECTION _dir, List<String> _paramList) : base(_name, _dir)
+        public ListParameter(String _name, List<String> _paramList) : base(_name)
         {
+            typ = TYPE.LIST;
             paramList = _paramList;
+            
         }
     }
 
+    //-------------------------------------------------------------------------
+    // MODULE CODE/DATA BLOCKS
     //-------------------------------------------------------------------------
 
     public class ModuleBlock

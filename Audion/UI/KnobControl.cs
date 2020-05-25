@@ -1,6 +1,6 @@
 ﻿/* ----------------------------------------------------------------------------
 Audion : a audio plugin creator
-Copyright (C) 2011-2017  George E Greaney
+Copyright (C) 2011-2020  George E Greaney
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -23,64 +23,49 @@ using System.Linq;
 using System.Text;
 using System.Drawing;
 
-using Transonic.Patch;
+using Kohoutech.Patch;
 using Audion.Breadboard;
 
 namespace Audion.UI
 {
-    public class KnobControl : PatchBox
+    public class KnobControl : Module, IPatchBox
     {
-        Module module;
-        KnobPanel panel;
-
-        public KnobControl(Module _module)
-            : base()
+        public KnobControl() : base("Knob")
         {
-            module = _module;
-            title = "Knob";
-            addPanel(new ModulePanel(this, module.jacks[0]), false);
-            panel = new KnobPanel(this);
-            this.addPanel(panel, false);
+            JackPanel jack = new JackPanel(this, "Out", JackPanel.DIRECTION.OUT);                
+            panels.Add(jack);
+            KnobPanel knob = new KnobPanel(this);
+            panels.Add(knob);
         }
     }
 
-    public class KnobPanel : PatchPanel {
+    //-------------------------------------------------------------------------
+
+    public class KnobPanel : ModulePanel, IPatchPanel
+    {
 
         const int KNOBSIZE = 30;
-        Rectangle knobRect;
-        PointF centerPt;
         double val;
         int orgY;
 
-        public KnobPanel(PatchBox box)
-            : base(box)
+        public KnobPanel(KnobControl module) : base(module, "Knob")
         {
-            panelType = "KnobPanel";
-            connType = CONNECTIONTYPE.NEITHER;
-            updateFrame(KNOBSIZE + 10 + 10, frameWidth);
-            knobRect = new Rectangle(frame.Left + ((frame.Width - KNOBSIZE) / 2), frame.Top + 10, KNOBSIZE, KNOBSIZE);
-            centerPt = new PointF(knobRect.Left + knobRect.Height / 2, knobRect.Top + knobRect.Width / 2);
+            height = AudionPatch.PANELHEIGHT * 2;       //2U height
             val = 0.0;
+            orgY = 0;
         }
 
-        public override void setPos(int xOfs, int yOfs)
-        {
-            base.setPos(xOfs, yOfs);
-            knobRect.Offset(xOfs, yOfs);
-            centerPt = new PointF(knobRect.Left + knobRect.Height / 2, knobRect.Top + knobRect.Width / 2);
-        }
-
-        public override bool canTrackMouse()
+        public bool canTrackMouse()
         {
             return true;
         }
 
-        public override void onMouseDown(Point pos)
+        public void mouseDown(Point pos)
         {
             orgY = pos.Y;   
         }
 
-        public override void onMouseMove(Point pos)
+        public void mouseMove(Point pos)
         {
             double delta = (pos.Y - orgY) / 100.0;
             val -= delta;
@@ -88,17 +73,18 @@ namespace Audion.UI
             orgY = pos.Y;              
         }
 
-        public override void onMouseUp(Point pos)
-        {
-            
+        public void mouseUp(Point pos)
+        {            
         }
 
-        public override void paint(Graphics g)
+        public void paint(Graphics g, Rectangle frame)
         {
-            base.paint(g);
+            Rectangle knobRect = new Rectangle(frame.Left + ((frame.Width - KNOBSIZE) / 2), frame.Top + ((frame.Height - KNOBSIZE) / 2), KNOBSIZE, KNOBSIZE);
+            PointF centerPt = new PointF(knobRect.Left + knobRect.Height / 2, knobRect.Top + knobRect.Width / 2);
 
             Pen knobPen = new Pen(Color.Black, 3.0f);
             g.DrawEllipse(knobPen, knobRect);
+
             double angle = (225 - (val * 270)) * (Math.PI / 180);
             float ptx = (float)(Math.Cos(angle) * KNOBSIZE / 2);
             float pty = (float)(Math.Sin(angle) * KNOBSIZE / 2);
