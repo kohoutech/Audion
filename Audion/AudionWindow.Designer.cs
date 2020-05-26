@@ -39,6 +39,9 @@
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.exitFileMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.modulesMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.manageModuleMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.pluginToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.runPluginMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.helpMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.aboutHelpMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.AudionStatus = new System.Windows.Forms.StatusStrip();
@@ -46,9 +49,6 @@
             this.newToolStripButton = new System.Windows.Forms.ToolStripButton();
             this.openToolStripButton = new System.Windows.Forms.ToolStripButton();
             this.saveToolStripButton = new System.Windows.Forms.ToolStripButton();
-            this.pluginToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.runPluginMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.manageModuleMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.audionMenu.SuspendLayout();
             this.audionToolStrip.SuspendLayout();
             this.SuspendLayout();
@@ -148,6 +148,28 @@
             this.modulesMenuItem.Size = new System.Drawing.Size(65, 20);
             this.modulesMenuItem.Text = "&Modules";
             // 
+            // manageModuleMenuItem
+            // 
+            this.manageModuleMenuItem.Name = "manageModuleMenuItem";
+            this.manageModuleMenuItem.Size = new System.Drawing.Size(126, 22);
+            this.manageModuleMenuItem.Text = "&Manage...";
+            this.manageModuleMenuItem.Click += new System.EventHandler(this.manageModuleMenuItem_Click);
+            // 
+            // pluginToolStripMenuItem
+            // 
+            this.pluginToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.runPluginMenuItem});
+            this.pluginToolStripMenuItem.Name = "pluginToolStripMenuItem";
+            this.pluginToolStripMenuItem.Size = new System.Drawing.Size(53, 20);
+            this.pluginToolStripMenuItem.Text = "Plugin";
+            // 
+            // runPluginMenuItem
+            // 
+            this.runPluginMenuItem.Name = "runPluginMenuItem";
+            this.runPluginMenuItem.Size = new System.Drawing.Size(95, 22);
+            this.runPluginMenuItem.Text = "&Run";
+            this.runPluginMenuItem.Click += new System.EventHandler(this.runPluginMenuItem_Click);
+            // 
             // helpMenuItem
             // 
             this.helpMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -159,7 +181,7 @@
             // aboutHelpMenuItem
             // 
             this.aboutHelpMenuItem.Name = "aboutHelpMenuItem";
-            this.aboutHelpMenuItem.Size = new System.Drawing.Size(180, 22);
+            this.aboutHelpMenuItem.Size = new System.Drawing.Size(116, 22);
             this.aboutHelpMenuItem.Text = "&About...";
             this.aboutHelpMenuItem.Click += new System.EventHandler(this.aboutHelpMenuItem_Click);
             // 
@@ -210,28 +232,6 @@
             this.saveToolStripButton.Size = new System.Drawing.Size(23, 22);
             this.saveToolStripButton.Text = "&Save Unit";
             // 
-            // pluginToolStripMenuItem
-            // 
-            this.pluginToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.runPluginMenuItem});
-            this.pluginToolStripMenuItem.Name = "pluginToolStripMenuItem";
-            this.pluginToolStripMenuItem.Size = new System.Drawing.Size(53, 20);
-            this.pluginToolStripMenuItem.Text = "Plugin";
-            // 
-            // runPluginMenuItem
-            // 
-            this.runPluginMenuItem.Name = "runPluginMenuItem";
-            this.runPluginMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.runPluginMenuItem.Text = "&Run";
-            this.runPluginMenuItem.Click += new System.EventHandler(this.runPluginMenuItem_Click);
-            // 
-            // manageModuleMenuItem
-            // 
-            this.manageModuleMenuItem.Name = "manageModuleMenuItem";
-            this.manageModuleMenuItem.Size = new System.Drawing.Size(180, 22);
-            this.manageModuleMenuItem.Text = "&Manage...";
-            this.manageModuleMenuItem.Click += new System.EventHandler(this.manageModuleMenuItem_Click);
-            // 
             // AudionWindow
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -243,8 +243,9 @@
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MainMenuStrip = this.audionMenu;
             this.Name = "AudionWindow";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Audion";
+            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.AudionWindow_FormClosed);
+            this.Load += new System.EventHandler(this.AudionWindow_Load);
             this.audionMenu.ResumeLayout(false);
             this.audionMenu.PerformLayout();
             this.audionToolStrip.ResumeLayout(false);

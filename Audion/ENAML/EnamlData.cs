@@ -66,6 +66,8 @@ namespace Kohoutech.ENAML
         {
             EnamlData enaml = null;
             string[] lines = null;
+            if (!File.Exists(filename)) return null;        //return null if file isn't present
+
             try
             {
                 lines = File.ReadAllLines(filename);

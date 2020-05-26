@@ -57,7 +57,6 @@ namespace Audion
             settings = Settings.loadSettings(settingsFilename);
 
             audion = new Audion(this);
-
         }
 
         protected override void OnResize(EventArgs e)
@@ -67,6 +66,25 @@ namespace Audion
             {
                 canvas.Size = new Size(this.ClientRectangle.Width, this.AudionStatus.Top - this.audionToolStrip.Bottom);
             }
+        }
+
+        private void AudionWindow_Load(object sender, EventArgs e)
+        {
+            //set initial sizes
+            if (settings.winposset)
+            {
+                this.Location = new Point(settings.audWndX, settings.audWndY);
+                this.Size = new Size(settings.audWndWidth, settings.audWndHeight);
+            }
+        }
+
+        private void AudionWindow_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            settings.audWndX = this.Location.X;
+            settings.audWndY = this.Location.Y;
+            settings.audWndWidth = this.Size.Width;
+            settings.audWndHeight = this.Size.Height;
+            settings.saveSettings(settingsFilename);
         }
 
         //- file menu -----------------------------------------------------------------
@@ -143,7 +161,5 @@ namespace Audion
                 "http://transonic.kohoutech.com";
             MessageBox.Show(msg, "About");
         }
-
-
     }
 }

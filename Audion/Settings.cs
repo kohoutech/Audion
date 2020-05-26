@@ -29,6 +29,13 @@ namespace Audion
     public class Settings
     {
         public string version;
+
+        public bool winposset;
+        public int audWndX;
+        public int audWndY;
+        public int audWndWidth;
+        public int audWndHeight;
+
         public string modPath;
         public List<string> moduleFiles;
 
@@ -37,13 +44,20 @@ namespace Audion
             Settings settings = new Settings();
 
             EnamlData data = EnamlData.loadFromFile(filename);
+            if (data == null) return settings;                      //didn't find a config file, return default settings value
 
             //global
             settings.version = data.getStringValue("Audion.version", "");
-            settings.modPath = data.getStringValue("Audion.modulefolder", "");
+
+            settings.audWndX = data.getIntValue("Audion.windowX", 0);            
+            settings.audWndY = data.getIntValue("Audion.windowY", 0);
+            settings.audWndWidth = data.getIntValue("Audion.windowWidth", 600);
+            settings.audWndHeight = data.getIntValue("Audion.windowHeight", 400);
+            settings.winposset = true;
 
             //modules
-            settings.moduleFiles = new List<string>();
+            settings.modPath = data.getStringValue("Audion.modulefolder", "");
+            settings.moduleFiles.Clear();
             List<String> modules = data.getPathKeys("Modules");
             foreach(String module in modules)
             {
@@ -56,7 +70,38 @@ namespace Audion
 
         public void saveSettings(String filename)
         {
+            EnamlData data = new EnamlData();
 
+            //global
+            data.setStringValue("Audion.version", version);
+
+            data.setIntValue("Audion.windowX", audWndX);
+            data.setIntValue("Audion.windowY", audWndY);
+            data.setIntValue("Audion.windowWidth", audWndWidth);
+            data.setIntValue("Audion.windowHeight", audWndHeight);
+
+            //module
+            data.setStringValue("Audion.modulefolder", modPath);
+            for (int i = 0; i < moduleFiles.Count; i++)
+            {
+                data.setStringValue("Modules.module" + (i + 1).ToString("D4") + ".filename", moduleFiles[i]);                    
+            }
+
+            data.saveToFile(filename);
+        }
+
+        public Settings()
+        {
+            version = "0.1.0";
+
+            winposset = false;
+            audWndX = 0;
+            audWndY = 0;
+            audWndWidth = 600;
+            audWndHeight = 400;
+
+            modPath = Environment.CurrentDirectory;
+            moduleFiles = new List<string>();
         }
     }
 }
