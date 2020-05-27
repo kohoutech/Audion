@@ -45,6 +45,7 @@ namespace Audion.Breadboard
             source.disconnect(this);
             source = null;
             dest = null;
+            patch.removeCord(this);
         }
 
         public void doubleClick()

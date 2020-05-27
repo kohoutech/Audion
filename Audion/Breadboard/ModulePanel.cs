@@ -67,6 +67,11 @@ namespace Audion.Breadboard
             return new Point(0, 0);         
         }
 
+        public virtual bool canConnectIn(IPatchPanel source)
+        {
+            return false;
+        }
+
         //response to mouse clicks by default, instead of down / move / up events
         public virtual bool canTrackMouse()
         {

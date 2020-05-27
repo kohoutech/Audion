@@ -40,9 +40,14 @@ namespace Audion.Breadboard
 
         public PatchCanvas canvas;
 
-        public static AudionPatch loadPatch(Audion _audion, String filename)
+        public void loadPatch(Audion _audion, String filename)
         {
-            return null;
+            
+        }
+
+        public void savePatch(String filename)
+        {
+
         }
 
         public AudionPatch(Audion _audion)
@@ -53,17 +58,17 @@ namespace Audion.Breadboard
             canvas = null;
         }
 
-        internal void remove(Module module)
+        internal void removeModule(Module module)
         {
             modules.Remove(module);
         }
 
-        //- view interface methods --------------------------------------------
-
-        public void setCanvas(PatchCanvas _canvas)
+        internal void removeCord(PatchCord cord)
         {
-            canvas = _canvas;
+            cords.Remove(cord);
         }
+
+        //- canvas interface methods --------------------------------------------
 
         //create patch module from module name, add it to patch & pass it back to canvas
         //so that canvas can graphically display the module in the patch
@@ -116,8 +121,14 @@ namespace Audion.Breadboard
             if (source is JackPanel && dest is JackPanel)
             {
                 cord = new PatchCord(this, (JackPanel)source, (JackPanel)dest);
+                cords.Add(cord);
             }
             return cord;
+        }
+
+        public void layoutHasChanged()
+        {
+            audion.patchHasChanged(false);
         }
     }
 }

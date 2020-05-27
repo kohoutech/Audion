@@ -40,12 +40,12 @@ namespace Audion
         public Audion(AudionWindow _window)
         {
             window = _window;
-            canvas = window.canvas;
-
-            loadModuleDefinitions();
 
             patch = new AudionPatch(this);
-            canvas.setPatch(patch);
+            canvas = new PatchCanvas(patch);
+            patch.canvas = canvas;              //so the model can notify the canvas when it has changed
+
+            loadModuleDefinitions();            
         }
 
         //- module management -------------------------------------------------
@@ -85,6 +85,36 @@ namespace Audion
                 def = moduleDefs[modName];
             }
             return def;
+        }
+
+        //- patch management -------------------------------------------------
+
+        public void newPatch()
+        {
+            canvas.clearPatch();
+        }
+
+        public int loadPatch(string patchFilename)
+        {
+            canvas.clearPatch();
+            return 0;
+        }
+
+        public int savePatch(string filename)
+        {
+            return 0;
+        }
+
+        //called when the patch has changed, if update is true, the change originated 
+        //with the patch and the canvas needs to been redrawn to reflect it, otherwise
+        //the change came from the canvas, and it should already up to date
+        internal void patchHasChanged(bool update)
+        {
+            if (update)
+            {
+                canvas.redraw();
+            }
+            window.patchHasChanged();       //prevent user from closing patch w/o saving changes
         }
     }
 }

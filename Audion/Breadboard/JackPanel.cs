@@ -36,11 +36,13 @@ namespace Audion.Breadboard
             OUT
         }
 
+        public string tag;
         public DIRECTION dir;
         public List<PatchCord> outs;
 
-        public JackPanel(Module _module, String name, JackPanel.DIRECTION _dir) : base(_module, name)
+        public JackPanel(Module _module, String name, JackPanel.DIRECTION _dir, string _tag) : base(_module, name)
         {
+            tag = _tag;
             dir = _dir;
             outs = new List<PatchCord>();
         }
@@ -55,6 +57,7 @@ namespace Audion.Breadboard
             outs.Remove(cord);
         }
 
+        //jack panel can either be a DEST or a SOURCE (but never a NEITHER)
         public override PatchPanel.CONNECTIONTYPE getConnType()
         {
             return (dir == DIRECTION.IN) ? PatchPanel.CONNECTIONTYPE.DEST : PatchPanel.CONNECTIONTYPE.SOURCE;
@@ -65,6 +68,12 @@ namespace Audion.Breadboard
             int h = height / 2;
             int w = (dir == DIRECTION.IN) ? 0 : width;
             return new Point(w, h);
+        }
+
+        //only allow connections between panels with matching types!
+        public override bool canConnectIn(IPatchPanel source)
+        {
+            return ((JackPanel)source).tag.Equals(tag);
         }
 
         public override bool canTrackMouse()
@@ -85,7 +94,7 @@ namespace Audion.Breadboard
                 g.DrawLine(Pens.Black, frame.Left, centerY, frame.Left + 5, centerY);
                 g.DrawString(name, nameFont, Brushes.Black, frame.Left + 7, nameY);
             }
-            else 
+            else
             {
                 g.DrawLine(Pens.Black, frame.Right - 5, centerY, frame.Right, centerY);
                 g.DrawString(name, nameFont, Brushes.Black, frame.Right - nameSize.Width - 7, nameY);
@@ -97,23 +106,22 @@ namespace Audion.Breadboard
 
     public class AudioPanel : JackPanel
     {
-        public AudioPanel(Module _module, String name, DIRECTION dir) : base(_module, name, dir)
-        {
+        public AudioPanel(Module _module, String name, DIRECTION dir) : base(_module, name, dir, "Audio")
+        {            
         }
     }
 
     //-------------------------------------------------------------------------
 
-        //a jack panel for controlling a module's parameters
-        //all param panels have in jacks
+    //a jack panel for controlling a module's parameters
+    //all param panels have in jacks
     public class ParamPanel : JackPanel
     {
         public ModuleParameter parm;
 
-        public ParamPanel(Module _module, ModuleParameter _parm) : base(_module, _parm.name, DIRECTION.IN)
+        public ParamPanel(Module _module, ModuleParameter _parm) : base(_module, _parm.name, DIRECTION.IN, _parm.getParamType())
         {
             parm = _parm;
         }
     }
-
 }

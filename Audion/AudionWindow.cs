@@ -25,6 +25,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using System.IO;
 
 using Kohoutech.MIDI.System;
 using Kohoutech.Patch;
@@ -44,19 +45,28 @@ namespace Audion
         public Audion audion;                       //controller
         public PatchCanvas canvas;                  //view
 
+        public String patchFilename;
+        public bool hasChanged;
+
         public AudionWindow()
         {
             InitializeComponent();
 
-            canvas = new PatchCanvas();
-            canvas.setCanvasColor(Color.FromArgb(0xe6,0x6e,0x1e));
+            settings = Settings.load(settingsFilename);
+            if (settings.patchFolder.Length == 0) settings.patchFolder = Application.StartupPath;
+            if (settings.modPath.Length == 0) settings.modPath = Application.StartupPath;
+
+            audion = new Audion(this);
+
+            canvas = audion.canvas;
+            canvas.setCanvasColor(Color.FromArgb(0xe6, 0x6e, 0x1e));
             canvas.Location = new Point(this.ClientRectangle.Left, this.audionToolStrip.Bottom);
             canvas.Size = new Size(this.ClientRectangle.Width, this.AudionStatus.Top - this.audionToolStrip.Bottom);
             this.Controls.Add(canvas);
 
-            settings = Settings.loadSettings(settingsFilename);
-
-            audion = new Audion(this);
+            patchFilename = null;
+            this.Text = "Audion [new patch]";
+            hasChanged = false;
         }
 
         protected override void OnResize(EventArgs e)
@@ -78,35 +88,106 @@ namespace Audion
             }
         }
 
+        //save settings & clean up on shut down
         private void AudionWindow_FormClosed(object sender, FormClosedEventArgs e)
         {
             settings.audWndX = this.Location.X;
             settings.audWndY = this.Location.Y;
             settings.audWndWidth = this.Size.Width;
             settings.audWndHeight = this.Size.Height;
-            settings.saveSettings(settingsFilename);
+            settings.save(settingsFilename);
         }
 
         //- file menu -----------------------------------------------------------------
 
+        public void newPatch()
+        {
+            audion.newPatch();
+            patchFilename = null;
+            this.Text = "Audion [new patch]";
+            hasChanged = false;
+        }
+
+        public void patchHasChanged()
+        {
+            if (!hasChanged)
+            {
+                this.Text = "*" + this.Text;
+            }
+            hasChanged = true;
+        }
+
+        public void loadPatch()
+        {
+#if (DEBUG)
+            String filename = "patch1.aud";
+#else
+
+            openPatchDialog.InitialDirectory = settings.patchFolder;
+            openPatchDialog.FileName = "";
+            openPatchDialog.DefaultExt = "*.aud";
+            openPatchDialog.Filter = "patch files|*.aud|All files|*.*";
+            DialogResult result = openPatchDialog.ShowDialog();
+            String filename = openPatchDialog.FileName;
+            if ((result == DialogResult.Cancel) || (filename.Length == 0)) return;           //user canceled load dialog
+#endif
+
+            patchFilename = filename;
+            audion.loadPatch(patchFilename);
+            this.Text = "Audion [" + patchFilename + "]";
+            hasChanged = false;
+            settings.patchFolder = Path.GetDirectoryName(Path.GetFullPath(filename));
+        }
+
+        public void savePatch(bool newName)
+        {
+            bool renamed = false;
+            if (newName || patchFilename == null)
+            {
+                String filename = "";
+                savePatchDialog.InitialDirectory = settings.patchFolder;
+                savePatchDialog.DefaultExt = "*.aud";
+                savePatchDialog.Filter = "patch files|*.aud|All files|*.*";
+                DialogResult result = savePatchDialog.ShowDialog();
+                filename = savePatchDialog.FileName;
+                if ((result == DialogResult.Cancel) || (filename.Length == 0)) return;           //user canceled save dialog
+
+                //add default extention if filename doesn't have one
+                if (!filename.Contains('.'))
+                    filename = filename + ".aud";
+
+                patchFilename = filename;
+                settings.patchFolder = Path.GetDirectoryName(Path.GetFullPath(patchFilename));
+                renamed = true;
+            }
+            audion.savePatch(patchFilename);
+            this.Text = "Audion [" + patchFilename + "]";
+            hasChanged = false;
+            if (renamed)
+            {
+                String msg = "Current patch has been saved as\n " + Path.GetFileName(patchFilename);
+                MessageBox.Show(msg, "Saved");
+            }
+        }
+
         private void newPluginFileMenuItem_Click(object sender, EventArgs e)
         {
-
+            newPatch();
         }
 
         private void openPluginFileMenuItem_Click(object sender, EventArgs e)
         {
-
+            loadPatch();
         }
 
         private void savePluginFileMenuItem_Click(object sender, EventArgs e)
         {
-
+            savePatch(false);
         }
 
         private void savePluginAsFileMenuItem_Click(object sender, EventArgs e)
         {
-
+            savePatch(true);
         }
 
         private void exitFileMenuItem_Click(object sender, EventArgs e)
@@ -151,7 +232,7 @@ namespace Audion
         {
 
         }
-        
+
         //- help menu -----------------------------------------------------------------
 
         private void aboutHelpMenuItem_Click(object sender, EventArgs e)

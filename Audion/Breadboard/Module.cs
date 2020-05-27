@@ -96,7 +96,7 @@ namespace Audion.Breadboard
         {
             if (patch != null)
             {
-                patch.remove(this);
+                patch.removeModule(this);
             }
         }
 

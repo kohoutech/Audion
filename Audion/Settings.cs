@@ -36,10 +36,12 @@ namespace Audion
         public int audWndWidth;
         public int audWndHeight;
 
+        public string patchFolder;
+
         public string modPath;
         public List<string> moduleFiles;
 
-        public static Settings loadSettings(String filename)
+        public static Settings load(String filename)
         {
             Settings settings = new Settings();
 
@@ -49,14 +51,16 @@ namespace Audion
             //global
             settings.version = data.getStringValue("Audion.version", "");
 
-            settings.audWndX = data.getIntValue("Audion.windowX", 0);            
-            settings.audWndY = data.getIntValue("Audion.windowY", 0);
-            settings.audWndWidth = data.getIntValue("Audion.windowWidth", 600);
-            settings.audWndHeight = data.getIntValue("Audion.windowHeight", 400);
+            settings.audWndX = data.getIntValue("Audion.windowX", settings.audWndX);
+            settings.audWndY = data.getIntValue("Audion.windowY", settings.audWndY);
+            settings.audWndWidth = data.getIntValue("Audion.windowWidth", settings.audWndWidth);
+            settings.audWndHeight = data.getIntValue("Audion.windowHeight", settings.audWndHeight);
             settings.winposset = true;
 
+            settings.patchFolder = data.getStringValue("Audion.patchFolder", settings.patchFolder);
+
             //modules
-            settings.modPath = data.getStringValue("Audion.modulefolder", "");
+            settings.modPath = data.getStringValue("Audion.modulefolder", settings.modPath);
             settings.moduleFiles.Clear();
             List<String> modules = data.getPathKeys("Modules");
             foreach(String module in modules)
@@ -68,7 +72,7 @@ namespace Audion
             return settings;
         }
 
-        public void saveSettings(String filename)
+        public void save(String filename)
         {
             EnamlData data = new EnamlData();
 
@@ -79,6 +83,8 @@ namespace Audion
             data.setIntValue("Audion.windowY", audWndY);
             data.setIntValue("Audion.windowWidth", audWndWidth);
             data.setIntValue("Audion.windowHeight", audWndHeight);
+
+            data.setStringValue("Audion.patchFolder", patchFolder);
 
             //module
             data.setStringValue("Audion.modulefolder", modPath);
@@ -100,7 +106,9 @@ namespace Audion
             audWndWidth = 600;
             audWndHeight = 400;
 
-            modPath = Environment.CurrentDirectory;
+            patchFolder = "";
+
+            modPath = "";
             moduleFiles = new List<string>();
         }
     }

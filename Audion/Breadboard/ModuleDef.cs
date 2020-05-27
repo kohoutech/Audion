@@ -182,6 +182,7 @@ namespace Audion.Breadboard
     public class ModuleParameter
     {
         public enum TYPE { RANGE, ONOFF, LIST };
+        public string[] typeNames = { "Range", "OnOff", "List" };
 
         public string name;
         public TYPE typ;
@@ -190,6 +191,11 @@ namespace Audion.Breadboard
         {
             name = _name;
             typ = TYPE.RANGE;
+        }
+
+        public string getParamType()
+        {
+            return typeNames[(int)typ];
         }
     }
 

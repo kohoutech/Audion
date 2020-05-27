@@ -49,6 +49,8 @@
             this.newToolStripButton = new System.Windows.Forms.ToolStripButton();
             this.openToolStripButton = new System.Windows.Forms.ToolStripButton();
             this.saveToolStripButton = new System.Windows.Forms.ToolStripButton();
+            this.openPatchDialog = new System.Windows.Forms.OpenFileDialog();
+            this.savePatchDialog = new System.Windows.Forms.SaveFileDialog();
             this.audionMenu.SuspendLayout();
             this.audionToolStrip.SuspendLayout();
             this.SuspendLayout();
@@ -277,6 +279,8 @@
         private System.Windows.Forms.ToolStripMenuItem manageModuleMenuItem;
         private System.Windows.Forms.ToolStripMenuItem pluginToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem runPluginMenuItem;
+        private System.Windows.Forms.OpenFileDialog openPatchDialog;
+        private System.Windows.Forms.SaveFileDialog savePatchDialog;
     }
 }
 
