@@ -34,12 +34,14 @@ namespace Audion
         public AudionWindow window;
         public PatchCanvas canvas;
         public AudionPatch patch;
+        public Settings settings;
 
         public Dictionary<string, ModuleDef> moduleDefs;
 
         public Audion(AudionWindow _window)
         {
             window = _window;
+            settings = window.settings;
 
             patch = new AudionPatch(this);
             canvas = new PatchCanvas(patch);
@@ -102,7 +104,9 @@ namespace Audion
 
         public int savePatch(string filename)
         {
-            return 0;
+            string filepath = settings.patchFolder + "\\" + filename;
+            int result = patch.savePatch(filepath);
+            return result;
         }
 
         //called when the patch has changed, if update is true, the change originated 

@@ -32,6 +32,7 @@ namespace Audion.Breadboard
     {
         public Module module;
         public String name;
+        public int num;
         public int width;
         public int height;
 
@@ -39,6 +40,7 @@ namespace Audion.Breadboard
         {
             module = _module;
             name = _name;
+            num = 0;
             width = AudionPatch.MODULEWIDTH;
             height = AudionPatch.PANELHEIGHT;
         }

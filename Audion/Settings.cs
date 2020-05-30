@@ -28,6 +28,8 @@ namespace Audion
 {
     public class Settings
     {
+        public const string VERSION = "0.1.0";
+
         public string version;
 
         public bool winposset;
@@ -90,7 +92,7 @@ namespace Audion
             data.setStringValue("Audion.modulefolder", modPath);
             for (int i = 0; i < moduleFiles.Count; i++)
             {
-                data.setStringValue("Modules.module" + (i + 1).ToString("D4") + ".filename", moduleFiles[i]);                    
+                data.setStringValue("Modules.module" + (i + 1).ToString("D3") + ".filename", moduleFiles[i]);                    
             }
 
             data.saveToFile(filename);

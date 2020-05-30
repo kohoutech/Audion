@@ -1,5 +1,5 @@
 ﻿/* ----------------------------------------------------------------------------
-Transonic Patch Library
+Kohoutech Patch Library
 Copyright (C) 1995-2020  George E Greaney
 
 This program is free software; you can redistribute it and/or
@@ -24,7 +24,7 @@ using System.Text;
 using System.Drawing;
 using System.Xml;
 
-namespace Transonic.Patch
+namespace Kohoutech.Patch
 {
     public class PatchBox
     {
@@ -41,7 +41,7 @@ namespace Transonic.Patch
         public String title;
         public Rectangle newPanelBar;
 
-        public iPatchBox model;
+        public IPatchBox model;
 
         //box constants
         readonly Pen NORMALBORDER  = Pens.Black;
@@ -50,20 +50,19 @@ namespace Transonic.Patch
         readonly Brush BACKGROUNDCOLOR = new SolidBrush(Color.FromArgb(111, 177, 234));
         readonly Brush TITLECOLOR = Brushes.Black;
         readonly Font TITLEFONT = SystemFonts.DefaultFont;
-        readonly int FRAMEWIDTH = 100;
 
-        internal PatchBox(iPatchBox _boxModel)
+        internal PatchBox(IPatchBox _boxModel)
         {
             canvas = null;
             model = _boxModel;
 
             frame.Location = new Point(0,0);
-            frame.Width = FRAMEWIDTH;
+            frame.Width = model.getWidth();
 
             //set box title bar
             title = model.getTitle();
             titleBar.Location = frame.Location;
-            titleBar.Width = FRAMEWIDTH;
+            titleBar.Width = frame.Width;
             titleBar.Height = 25;
             nextPanelPos = titleBar.Bottom;
             frame.Height = nextPanelPos;
@@ -72,8 +71,8 @@ namespace Transonic.Patch
             panels = new List<PatchPanel>();
             panelNames = new Dictionary<string, PatchPanel>();
 
-            List<iPatchPanel> ipanels = model.getPanels();
-            foreach (iPatchPanel ipanel in ipanels)
+            List<IPatchPanel> ipanels = model.getPanels();
+            foreach (IPatchPanel ipanel in ipanels)
             {
                 addPanel(ipanel);
             }
@@ -139,7 +138,7 @@ namespace Transonic.Patch
 
         //- panel methods -------------------------------------------------------------
 
-        public void addPanel(iPatchPanel iPanel)
+        public void addPanel(IPatchPanel iPanel)
         {
             PatchPanel panel = new PatchPanel(this, iPanel);
             panels.Add(panel);
@@ -214,19 +213,25 @@ namespace Transonic.Patch
 
     //- model interface -------------------------------------------------------
 
-    public interface iPatchBox
+    public interface IPatchBox
     {
         //get box's title from model
         string getTitle();
 
+        //get box width (and therefore width of all it's panels) from model
+        int getWidth();
+
         //get list of box's panels from model
-        List<iPatchPanel> getPanels();
+        List<IPatchPanel> getPanels();
 
         //remove this box's model from patch
         void remove();
 
         //box's title bar was double clicked
         void titleDoubleClick();
+
+        //if the model needs to know the location of the box on the canvas
+        void setPos(int xpos, int ypos);
     }
 }
 

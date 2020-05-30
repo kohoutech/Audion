@@ -29,9 +29,14 @@ namespace Audion.Breadboard
     public class Module : IPatchBox
     {
         public ModuleDef def;
+        public String defname;
         public AudionPatch patch;
         public String name;
         public List<ModulePanel> panels;
+
+        public int num;         //for loading and saving
+        public int xpos;
+            public int ypos;
 
         //cons for built-in modules, it's cons will add its own panels
         public Module(String _name)
@@ -40,6 +45,9 @@ namespace Audion.Breadboard
             def = null;
             name = _name;
             panels = new List<ModulePanel>();
+            num = 0;
+            xpos = 0;
+            ypos = 0;
         }
 
         //cons for modules loaded from module definitions
@@ -47,6 +55,7 @@ namespace Audion.Breadboard
         {
             patch = null;
             def = _def;
+            defname = def.name;
             name = def.name;
 
             //add module panels
@@ -55,23 +64,24 @@ namespace Audion.Breadboard
             {
                 string inname = "In" + i.ToString();
                 AudioPanel inpanel = new AudioPanel(this, inname, JackPanel.DIRECTION.IN);
-                panels.Add(inpanel);
+                addPanel(inpanel);
             }
             for (int i = 0; i < def.outputCount; i++)
             {
                 string outname = "Out" + i.ToString();
                 AudioPanel outpanel = new AudioPanel(this, outname, JackPanel.DIRECTION.OUT);
-                panels.Add(outpanel);
+                addPanel(outpanel);
             }
             foreach (ModuleParameter parm in def.paramList)
             {
                 ParamPanel parampanel = new ParamPanel(this, parm);
-                panels.Add(parampanel);
+                addPanel(parampanel);
             }
         }
 
         public void addPanel(ModulePanel panel) 
         {
+            panel.num = panels.Count;       //num panel for saving / loading connection(s) from patch file
             panels.Add(panel);
         }
 
@@ -103,6 +113,12 @@ namespace Audion.Breadboard
         public void titleDoubleClick()
         {            
         }
+
+        public void setPos(int x, int y)
+        {
+            xpos = x;
+            ypos = y;
+        }
     }
 
     //- built-ins -------------------------------------------------------------
@@ -111,6 +127,7 @@ namespace Audion.Breadboard
     {
         public AudioIn() : base("Audio In")
         {
+            defname = "AudioIn";
             addPanel(new AudioPanel(this, "In 1", JackPanel.DIRECTION.OUT));
             addPanel(new AudioPanel(this, "In 2", JackPanel.DIRECTION.OUT));
         }
@@ -120,6 +137,7 @@ namespace Audion.Breadboard
     {
         public AudioOut() : base("Audio Out")
         {
+            defname = "AudioOut";
             addPanel(new AudioPanel(this, "Out 1", JackPanel.DIRECTION.IN));
             addPanel(new AudioPanel(this, "Out 2", JackPanel.DIRECTION.IN));
         }

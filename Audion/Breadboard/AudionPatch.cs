@@ -45,9 +45,39 @@ namespace Audion.Breadboard
             
         }
 
-        public void savePatch(String filename)
+        public int savePatch(String filename)
         {
+            EnamlData data = new EnamlData();
 
+            //global
+            data.setStringValue("Audion.version", audion.settings.version);
+
+            //modules
+            for(int i = 0; i < modules.Count; i++)
+            {
+                Module mod = modules[i];
+                mod.num = i;
+                string modpath = "Modules.module" + (i + 1).ToString("D3");
+                data.setStringValue(modpath + ".name", mod.name);
+                data.setStringValue(modpath + ".def", mod.defname);
+                data.setIntValue(modpath + ".xpos", mod.xpos);
+                data.setIntValue(modpath + ".ypos", mod.ypos);
+            }
+
+            //cords
+            for (int i = 0; i < cords.Count; i++)
+            {
+                PatchCord cord = cords[i];
+                string modpath = "Cords.cord" + (i + 1).ToString("D3");
+                data.setIntValue(modpath + ".sourcemod", cord.source.module.num);
+                data.setIntValue(modpath + ".sourcepanel", cord.source.num);
+                data.setIntValue(modpath + ".destmod", cord.dest.module.num);
+                data.setIntValue(modpath + ".destpanel", cord.dest.num);
+            }
+
+            data.saveToFile(filename);
+
+            return 0;
         }
 
         public AudionPatch(Audion _audion)
@@ -61,11 +91,13 @@ namespace Audion.Breadboard
         internal void removeModule(Module module)
         {
             modules.Remove(module);
+            audion.patchHasChanged(false);
         }
 
         internal void removeCord(PatchCord cord)
         {
             cords.Remove(cord);
+            audion.patchHasChanged(false);
         }
 
         //- canvas interface methods --------------------------------------------
@@ -110,6 +142,7 @@ namespace Audion.Breadboard
             }
             modules.Add(module);
             module.patch = this;
+            audion.patchHasChanged(false);
             return module;
         }
 
@@ -123,6 +156,7 @@ namespace Audion.Breadboard
                 cord = new PatchCord(this, (JackPanel)source, (JackPanel)dest);
                 cords.Add(cord);
             }
+            audion.patchHasChanged(false);
             return cord;
         }
 

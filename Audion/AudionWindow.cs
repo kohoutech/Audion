@@ -65,7 +65,7 @@ namespace Audion
             this.Controls.Add(canvas);
 
             patchFilename = null;
-            this.Text = "Audion [new patch]";
+            this.Text = "new patch - Audion";
             hasChanged = false;
         }
 
@@ -104,7 +104,7 @@ namespace Audion
         {
             audion.newPatch();
             patchFilename = null;
-            this.Text = "Audion [new patch]";
+            this.Text = "new patch - Audion";
             hasChanged = false;
         }
 
@@ -134,7 +134,7 @@ namespace Audion
 
             patchFilename = filename;
             audion.loadPatch(patchFilename);
-            this.Text = "Audion [" + patchFilename + "]";
+            this.Text = patchFilename + " - Audion";
             hasChanged = false;
             settings.patchFolder = Path.GetDirectoryName(Path.GetFullPath(filename));
         }
@@ -156,12 +156,12 @@ namespace Audion
                 if (!filename.Contains('.'))
                     filename = filename + ".aud";
 
-                patchFilename = filename;
+                patchFilename = Path.GetFileName(filename);
                 settings.patchFolder = Path.GetDirectoryName(Path.GetFullPath(patchFilename));
                 renamed = true;
             }
             audion.savePatch(patchFilename);
-            this.Text = "Audion [" + patchFilename + "]";
+            this.Text = patchFilename + " - Audion";
             hasChanged = false;
             if (renamed)
             {
