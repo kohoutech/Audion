@@ -32,10 +32,11 @@ namespace Audion.UI
     {
         public KnobControl() : base("Knob")
         {
-            JackPanel jack = new JackPanel(this, "Out", JackPanel.DIRECTION.OUT);                
-            panels.Add(jack);
+            defname = "Knob";
+            JackPanel jack = new JackPanel(this, "Out", JackPanel.DIRECTION.OUT, "Range");
+            addPanel(jack);
             KnobPanel knob = new KnobPanel(this);
-            panels.Add(knob);
+            addPanel(knob);
         }
     }
 

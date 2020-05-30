@@ -36,10 +36,11 @@ namespace Audion.UI
 
         public ListSelectControl() : base("List")
         {
+            defname = "List";
             JackPanel jack = new ListJackPanel(this);
-            panels.Add(jack);
+            addPanel(jack);
             ListPanel list = new ListPanel(this);
-            panels.Add(list);
+            addPanel(list);
 
             items = null;
             curitem = 0;
@@ -55,7 +56,7 @@ namespace Audion.UI
     public class ListJackPanel : JackPanel
     {
 
-        public ListJackPanel(Module _module) : base(_module, "Out", JackPanel.DIRECTION.OUT)
+        public ListJackPanel(Module _module) : base(_module, "Out", JackPanel.DIRECTION.OUT, "List")
         {
         }
 
@@ -90,7 +91,7 @@ namespace Audion.UI
         }
 
         //display list values in a popup menu over the list panel
-        public void click(Point pos)
+        public override void click(Point pos)
         {
             if (((ListSelectControl)module).items != null)
             {
@@ -116,7 +117,7 @@ namespace Audion.UI
         }
 
 
-        public void paint(Graphics g, Rectangle frame)
+        public override void paint(Graphics g, Rectangle frame)
         {
             //Rectangle itemRect = new Rectangle(frame.Left + ITEMMARGIN, frame.Top, frame.Width - (ITEMMARGIN * 2), frame.Height);
             //g.FillRectangle(Brushes.White, itemRect);

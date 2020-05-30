@@ -96,10 +96,12 @@ namespace Audion
             canvas.clearPatch();
         }
 
-        public int loadPatch(string patchFilename)
+        public int loadPatch(string filename)
         {
             canvas.clearPatch();
-            return 0;
+            string filepath = settings.patchFolder + "\\" + filename;
+            int result = patch.loadPatch(filepath);
+            return result;
         }
 
         public int savePatch(string filename)

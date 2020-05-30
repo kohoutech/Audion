@@ -30,7 +30,9 @@ namespace Audion.Breadboard
     //base class for all audion module panels
     public class ModulePanel : IPatchPanel
     {
-        public Module module;
+        public Module module;           //owner
+        public PatchPanel panel;        //view
+
         public String name;
         public int num;
         public int width;
@@ -47,12 +49,17 @@ namespace Audion.Breadboard
 
         //IPatchPanel methods -------------------------------------------------
 
-        public virtual string getName()
+        public void setPanel(PatchPanel _panel)
+        {
+            panel = _panel;
+        }
+
+        public string getName()
         {
             return name;
         }
 
-        public virtual int getHeight()
+        public int getHeight()
         {
             return height;
         }

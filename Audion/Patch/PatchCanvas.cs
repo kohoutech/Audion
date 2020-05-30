@@ -251,8 +251,9 @@ namespace Kohoutech.Patch
 
         //- wire methods ---------------------------------------------------------------
 
-        public void addPatchWire(PatchWire wire)
+        public void addPatchWire(IPatchWire wireModel, PatchPanel sourcePanel, PatchPanel destPanel)
         {
+            PatchWire wire = new PatchWire(wireModel, sourcePanel, destPanel);
             wire.canvas = this;
             wireList.Add(wire);                                      //add to canvas
             zList.Add(wire);
@@ -549,8 +550,7 @@ namespace Kohoutech.Patch
 
                 //create new wire & connect it to source & dest panels
                 IPatchWire wireModel = patchModel.getPatchWire(sourcePanel.model, targetPanel.model);
-                PatchWire newWire = new PatchWire(sourcePanel, targetPanel, wireModel);
-                addPatchWire(newWire);
+                addPatchWire(wireModel, sourcePanel, targetPanel);
             }
 
             targetPanel = null;
@@ -601,9 +601,6 @@ namespace Kohoutech.Patch
 
     public interface IPatchModel
     {
-        //allow the model to invalidate the canvas when the canvas should reflect changes in the model
-        //        void setCanvas(PatchCanvas canvas);
-
         //allow the backing model to create a patch unit using the model name stored in palette item's tag field
         IPatchBox getPatchBox(String modelName);
 

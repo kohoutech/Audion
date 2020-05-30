@@ -1,5 +1,5 @@
 ﻿/* ----------------------------------------------------------------------------
-Transonic Patch Library
+Kohoutech Patch Library
 Copyright (C) 1995-2020  George E Greaney
 
 This program is free software; you can redistribute it and/or
@@ -24,34 +24,30 @@ using System.Text;
 using System.Drawing;
 using System.Xml;
 
-namespace Transonic.Patch
+namespace Kohoutech.Patch
 {
     public class PatchPanel
     {
-        public enum CONNECTIONTYPE 
-        {
-            SOURCE,
-            DEST,
-            NEITHER
-        }
+        public enum CONNECTIONTYPE { SOURCE, DEST, NEITHER }
 
         public String panelName;
 
         public PatchBox patchbox;
         public List<PatchWire> wires;
         public CONNECTIONTYPE connType;
-        public Point connectionPoint;
+        public Point connectionPoint;           
 
         public Rectangle frame;
         public int frameWidth;
         public int frameHeight;
 
-        public iPatchPanel model;
+        public IPatchPanel model;
 
-        public PatchPanel(PatchBox box, iPatchPanel _model)
+        public PatchPanel(PatchBox box, IPatchPanel _model)
         {
             patchbox = box;
             model = _model;
+            model.setPanel(this);
             panelName = model.getName();
 
             updateFrame(patchbox.frame.Width, model.getHeight());
@@ -70,8 +66,11 @@ namespace Transonic.Patch
 
         public void setPos(int xOfs, int yOfs)
         {
+            //move frame & connection point
             frame.Offset(xOfs, yOfs);
-            foreach(PatchWire connector in wires)
+            connectionPoint.Offset(xOfs, yOfs);
+
+            foreach (PatchWire connector in wires)
             {
                 if (connType == CONNECTIONTYPE.SOURCE)
                 {
@@ -89,11 +88,15 @@ namespace Transonic.Patch
             return (frame.Contains(p));
         }
 
-//- connections ---------------------------------------------------------------
+        //- connections ---------------------------------------------------------------
 
-        public bool canConnectIn()
+        public bool canConnectIn(PatchPanel source)
         {
-            return (connType == CONNECTIONTYPE.DEST);
+            if (connType == CONNECTIONTYPE.DEST)
+            {
+                return model.canConnectIn(source.model);
+            }
+            return false;
         }
 
         public bool canConnectOut()
@@ -101,7 +104,6 @@ namespace Transonic.Patch
             return (connType == CONNECTIONTYPE.SOURCE);
         }
 
-        //default connection point - dead center of the frame
         public Point ConnectionPoint()
         {
             return connectionPoint;
@@ -164,27 +166,34 @@ namespace Transonic.Patch
         public void paint(Graphics g)
         {
             g.DrawRectangle(Pens.Black, frame);
-            model.paint(g);
+            model.paint(g, frame);
         }
     }
 
     //- model interface -------------------------------------------------------
 
-    public interface iPatchPanel
+    public interface IPatchPanel
     {
+        //connect model panel to view panel so connections can be restored from patch file
+        void setPanel(PatchPanel panel);
+
         //get panel's name from model
         string getName();
 
         //get panel height from model
         int getHeight();
 
-        //get penel type (source, dest, neither) from model
+        //get panel type (source, dest, neither) from model
         PatchPanel.CONNECTIONTYPE getConnType();
 
         //get pos of connection on panel from model
         Point connectionPoint();
 
-        //can the panel track the mosue movements?
+        //ask the model if the connection source can connect to it
+        bool canConnectIn(IPatchPanel source);
+
+        //return true to respond to mousedown / mousemove / mouseup events
+        //return false to respond to mouseclick events
         bool canTrackMouse();
 
         //handle mouse down events
@@ -206,7 +215,7 @@ namespace Transonic.Patch
         void doubleClick(Point pos);
 
         //paint the panel's display inside it's frame
-        void paint(Graphics g);
+        void paint(Graphics g, Rectangle frame);
     }
 }
 

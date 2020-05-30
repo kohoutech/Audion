@@ -120,7 +120,7 @@ namespace Audion
         public void loadPatch()
         {
 #if (DEBUG)
-            String filename = "patch1.aud";
+            String filename = "patch2.aud";
 #else
 
             openPatchDialog.InitialDirectory = settings.patchFolder;
@@ -130,13 +130,13 @@ namespace Audion
             DialogResult result = openPatchDialog.ShowDialog();
             String filename = openPatchDialog.FileName;
             if ((result == DialogResult.Cancel) || (filename.Length == 0)) return;           //user canceled load dialog
+            settings.patchFolder = Path.GetDirectoryName(Path.GetFullPath(patchFilename));
 #endif
 
             patchFilename = filename;
             audion.loadPatch(patchFilename);
             this.Text = patchFilename + " - Audion";
-            hasChanged = false;
-            settings.patchFolder = Path.GetDirectoryName(Path.GetFullPath(filename));
+            hasChanged = false;            
         }
 
         public void savePatch(bool newName)

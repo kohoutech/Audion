@@ -40,10 +40,49 @@ namespace Audion.Breadboard
 
         public PatchCanvas canvas;
 
-        public void loadPatch(Audion _audion, String filename)
+        public int loadPatch(String filename)
         {
-            
+            EnamlData data = EnamlData.loadFromFile(filename);
+
+            String version = data.getStringValue("Audion.version", "");
+
+            //modules
+            List<String> modulenames = data.getPathKeys("Modules");
+            foreach (String modulename in modulenames)
+            {
+                string modpath = "Modules." + modulename;
+                string modname = data.getStringValue(modpath + ".name","");
+                string moddef = data.getStringValue(modpath + ".def", "");
+                int modxpos = data.getIntValue(modpath + ".xpos", 0);
+                int modypos = data.getIntValue(modpath + ".ypos", 0);
+
+                IPatchBox mod = getPatchBox(moddef);
+                ((Module)mod).name = modname;
+                canvas.addPatchBox(mod, modxpos, modypos);
+            }
+
+            //cords
+            List<String> cordnames = data.getPathKeys("Cords");
+            foreach (String cordname in cordnames)
+            {
+                string cordpath = "Cords." + cordname;
+                int srcmodnum = data.getIntValue(cordpath + ".srcmod", 0);
+                int srcpanelnum = data.getIntValue(cordpath + ".srcpanel", 0);
+                int destmodnum = data.getIntValue(cordpath + ".destmod", 0);
+                int destpanelnum = data.getIntValue(cordpath + ".destpanel", 0);
+                
+                Module srcmod = modules[srcmodnum];
+                ModulePanel srcpanel = srcmod.panels[srcpanelnum];
+                Module destmod = modules[destmodnum];
+                ModulePanel destpanel = destmod.panels[destpanelnum];
+
+                IPatchWire cord = getPatchWire(srcpanel, destpanel);
+                canvas.addPatchWire(cord, srcpanel.panel, destpanel.panel);
+            }
+
+            return 0;
         }
+
 
         public int savePatch(String filename)
         {
@@ -53,7 +92,7 @@ namespace Audion.Breadboard
             data.setStringValue("Audion.version", audion.settings.version);
 
             //modules
-            for(int i = 0; i < modules.Count; i++)
+            for (int i = 0; i < modules.Count; i++)
             {
                 Module mod = modules[i];
                 mod.num = i;
@@ -68,11 +107,11 @@ namespace Audion.Breadboard
             for (int i = 0; i < cords.Count; i++)
             {
                 PatchCord cord = cords[i];
-                string modpath = "Cords.cord" + (i + 1).ToString("D3");
-                data.setIntValue(modpath + ".sourcemod", cord.source.module.num);
-                data.setIntValue(modpath + ".sourcepanel", cord.source.num);
-                data.setIntValue(modpath + ".destmod", cord.dest.module.num);
-                data.setIntValue(modpath + ".destpanel", cord.dest.num);
+                string cordpath = "Cords.cord" + (i + 1).ToString("D3");
+                data.setIntValue(cordpath + ".srcmod", cord.source.module.num);
+                data.setIntValue(cordpath + ".srcpanel", cord.source.num);
+                data.setIntValue(cordpath + ".destmod", cord.dest.module.num);
+                data.setIntValue(cordpath + ".destpanel", cord.dest.num);
             }
 
             data.saveToFile(filename);

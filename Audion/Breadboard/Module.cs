@@ -66,16 +66,16 @@ namespace Audion.Breadboard
                 AudioPanel inpanel = new AudioPanel(this, inname, JackPanel.DIRECTION.IN);
                 addPanel(inpanel);
             }
+            foreach (ModuleParameter parm in def.paramList)
+            {
+                ParamPanel parampanel = new ParamPanel(this, parm);
+                addPanel(parampanel);
+            }
             for (int i = 0; i < def.outputCount; i++)
             {
                 string outname = "Out" + i.ToString();
                 AudioPanel outpanel = new AudioPanel(this, outname, JackPanel.DIRECTION.OUT);
                 addPanel(outpanel);
-            }
-            foreach (ModuleParameter parm in def.paramList)
-            {
-                ParamPanel parampanel = new ParamPanel(this, parm);
-                addPanel(parampanel);
             }
         }
 
@@ -128,8 +128,8 @@ namespace Audion.Breadboard
         public AudioIn() : base("Audio In")
         {
             defname = "AudioIn";
-            addPanel(new AudioPanel(this, "In 1", JackPanel.DIRECTION.OUT));
-            addPanel(new AudioPanel(this, "In 2", JackPanel.DIRECTION.OUT));
+            addPanel(new AudioPanel(this, "Left", JackPanel.DIRECTION.OUT));
+            addPanel(new AudioPanel(this, "Right", JackPanel.DIRECTION.OUT));
         }
     }
 
@@ -138,8 +138,8 @@ namespace Audion.Breadboard
         public AudioOut() : base("Audio Out")
         {
             defname = "AudioOut";
-            addPanel(new AudioPanel(this, "Out 1", JackPanel.DIRECTION.IN));
-            addPanel(new AudioPanel(this, "Out 2", JackPanel.DIRECTION.IN));
+            addPanel(new AudioPanel(this, "Left", JackPanel.DIRECTION.IN));
+            addPanel(new AudioPanel(this, "Right", JackPanel.DIRECTION.IN));
         }
     }
 
