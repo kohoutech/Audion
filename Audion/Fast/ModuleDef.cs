@@ -25,7 +25,7 @@ using System.IO;
 
 using Kohoutech.Win32;
 
-namespace Audion.Breadboard
+namespace Audion.Fast
 {
     public class ModuleDef
     {
@@ -37,7 +37,18 @@ namespace Audion.Breadboard
         public String vendor;
         public int inputCount;
         public int outputCount;
+
         public List<ModuleParameter> paramList;
+
+        public string initFunc;
+        public string paramSetFunc;
+        public string paramGetFunc;
+        public string paramDisplayFunc;
+        public string paramLabelFunc;
+        public string preprocessFunc;
+        public string processFunc;
+        public string postprocessFunc;
+
         public ModuleBlock codeBlock;
         public ModuleBlock dataBlock;
         public ModuleBlock bssBlock;
@@ -54,7 +65,7 @@ namespace Audion.Breadboard
                 return null;
             }
 
-            uint hdrsize = modfile.getFour();
+            uint modversion = modfile.getFour();
             string name = modfile.getAsciiZString();
             ModuleDef def = new ModuleDef(name);
 
@@ -99,6 +110,16 @@ namespace Audion.Breadboard
                 }
             }
 
+            //func list
+            def.initFunc = modfile.getAsciiZString();
+            def.paramSetFunc = modfile.getAsciiZString();
+            def.paramGetFunc = modfile.getAsciiZString();
+            def.paramDisplayFunc = modfile.getAsciiZString();
+            def.paramLabelFunc = modfile.getAsciiZString();
+            def.preprocessFunc = modfile.getAsciiZString();
+            def.processFunc = modfile.getAsciiZString();
+            def.postprocessFunc = modfile.getAsciiZString();
+            
             //block list
             uint blockCount = modfile.getOne();
             for (int i = 0; i < blockCount; i++)

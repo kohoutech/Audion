@@ -21,11 +21,16 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Windows.Forms;
 
 using Kohoutech.Patch;
+using Kohoutech.VST;
 
 using Audion.Breadboard;
+using Audion.Dialogs;
+using Audion.Fast;
 using Audion.UI;
+using Audion.Tidepool;
 
 namespace Audion
 {
@@ -35,6 +40,7 @@ namespace Audion
         public PatchCanvas canvas;
         public AudionPatch patch;
         public Settings settings;
+        public TidepoolE tidepool;
 
         public Dictionary<string, ModuleDef> moduleDefs;
 
@@ -79,6 +85,10 @@ namespace Audion
             canvas.addPaletteItem("controls", "Keyboard", "Keyboard");
         }
 
+        internal void manageModules()
+        {
+        }
+
         internal ModuleDef getModuleDef(string modName)
         {
             ModuleDef def = null;
@@ -93,6 +103,7 @@ namespace Audion
 
         public void newPatch()
         {
+            patch.clearSettings();
             canvas.clearPatch();
         }
 
@@ -122,6 +133,47 @@ namespace Audion
             }
             window.patchHasChanged();       //prevent user from closing patch w/o saving changes
         }
+
+        //- plugin management -------------------------------------------------
+
+        internal bool showPluginSettingsDialog()
+        {
+            dlgPluginSettings settingsDialog = new dlgPluginSettings();
+            settingsDialog.txtPluginName.Text = patch.effectName;
+            settingsDialog.txtProductName.Text = patch.productName;
+            settingsDialog.txtVendorName.Text = patch.vendorName;
+            settingsDialog.txtPluginID.Text = patch.pluginID;
+            settingsDialog.txtPluginVerison.Text = patch.pluginVersion.ToString();
+
+            DialogResult result = settingsDialog.ShowDialog();
+            if (result == DialogResult.OK)
+            {
+                patch.effectName = settingsDialog.txtPluginName.Text;
+                patch.productName = settingsDialog.txtProductName.Text;
+                patch.vendorName = "";
+                patch.pluginID = "";
+                patch.pluginVersion = 0;
+                return true;
+            }
+            return false;
+        }
+
+        internal void buildPlugin()
+        { 
+            if (!patch.checkSettings())
+            {
+                bool didset = showPluginSettingsDialog();
+                if (!didset) return;
+            }
+
+            AILObject ailobj = patch.generateAIL();
+            VSTPlugin plugin = tidepool.buildVST(ailobj);
+        }
+
+        internal void runPlugin()
+        {
+        }
+
     }
 }
 

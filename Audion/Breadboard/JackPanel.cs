@@ -25,6 +25,8 @@ using System.Text;
 
 using Kohoutech.Patch;
 
+using Audion.Fast;
+
 namespace Audion.Breadboard
 {
     //a module panel that has a connection jack
@@ -106,8 +108,11 @@ namespace Audion.Breadboard
 
     public class AudioPanel : JackPanel
     {
-        public AudioPanel(Module _module, String name, DIRECTION dir) : base(_module, name, dir, "Audio")
-        {            
+        public int panelnum;
+
+        public AudioPanel(Module _module, String name, int num, DIRECTION dir) : base(_module, name, dir, "Audio")
+        {
+            panelnum = num;
         }
     }
 

@@ -28,7 +28,7 @@ using Audion.Breadboard;
 
 namespace Audion.UI
 {
-    public class KnobControl : Module, IPatchBox
+    public class KnobControl : ControlModule, IPatchBox
     {
         public KnobControl() : base("Knob")
         {

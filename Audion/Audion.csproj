@@ -58,6 +58,12 @@
     </Compile>
     <Compile Include="Breadboard\AudionPatch.cs" />
     <Compile Include="Breadboard\ModulePanel.cs" />
+    <Compile Include="Dialogs\PluginSettings.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Dialogs\PluginSettings.Designer.cs">
+      <DependentUpon>PluginSettings.cs</DependentUpon>
+    </Compile>
     <Compile Include="Settings.cs" />
     <Compile Include="Tidepool\AIL.cs" />
     <Compile Include="ENAML\EnamlData.cs" />
@@ -97,7 +103,7 @@
     <Compile Include="UI\KeyboardControl.cs" />
     <Compile Include="UI\KnobControl.cs" />
     <Compile Include="UI\ListSelectControl.cs" />
-    <Compile Include="Breadboard\ModuleDef.cs" />
+    <Compile Include="Fast\ModuleDef.cs" />
     <Compile Include="VST\Vashti.cs" />
     <Compile Include="VST\VSTHost.cs" />
     <Compile Include="VST\VSTPlugin.cs" />
@@ -117,6 +123,9 @@
     <Compile Include="WIN32\Win32Obj.cs" />
     <EmbeddedResource Include="AudionWindow.resx">
       <DependentUpon>AudionWindow.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Dialogs\PluginSettings.resx">
+      <DependentUpon>PluginSettings.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Patch\PatchCanvas.resx">
       <DependentUpon>PatchCanvas.cs</DependentUpon>
@@ -142,73 +151,11 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
-    <None Include="VST\Debug\cl.command.1.tlog" />
-    <None Include="VST\Debug\CL.read.1.tlog" />
-    <None Include="VST\Debug\CL.write.1.tlog" />
-    <None Include="VST\Debug\link.command.1.tlog" />
-    <None Include="VST\Debug\link.read.1.tlog" />
-    <None Include="VST\Debug\link.write.1.tlog" />
-    <None Include="VST\Debug\mt.command.1.tlog" />
-    <None Include="VST\Debug\mt.read.1.tlog" />
-    <None Include="VST\Debug\mt.write.1.tlog" />
-    <None Include="VST\Debug\Vashti.dll.intermediate.manifest" />
-    <None Include="VST\Debug\Vashti.lastbuildstate" />
-    <None Include="VST\Debug\Vashti.log" />
-    <None Include="VST\Debug\Vashti.obj" />
-    <None Include="VST\Debug\Vashti.vcxprojResolveAssemblyReference.cache" />
-    <None Include="VST\Debug\Vashti.write.1.tlog" />
-    <None Include="VST\Debug\vc100.idb" />
-    <None Include="VST\Debug\VSTHost.obj" />
-    <None Include="VST\Debug\VSTPlugin.obj" />
-    <None Include="VST\Debug\WaveBuffer.obj" />
-    <None Include="VST\Debug\WaveOutDevice.obj" />
-    <None Include="VST\Release\cl.command.1.tlog" />
-    <None Include="VST\Release\CL.read.1.tlog" />
-    <None Include="VST\Release\CL.write.1.tlog" />
-    <None Include="VST\Release\link.command.1.tlog" />
-    <None Include="VST\Release\link.read.1.tlog" />
-    <None Include="VST\Release\link.write.1.tlog" />
-    <None Include="VST\Release\mt.command.1.tlog" />
-    <None Include="VST\Release\mt.read.1.tlog" />
-    <None Include="VST\Release\mt.write.1.tlog" />
-    <None Include="VST\Release\Vashti.dll.intermediate.manifest" />
-    <None Include="VST\Release\Vashti.lastbuildstate" />
-    <None Include="VST\Release\Vashti.log" />
-    <None Include="VST\Release\Vashti.obj" />
-    <None Include="VST\Release\Vashti.vcxprojResolveAssemblyReference.cache" />
-    <None Include="VST\Release\Vashti.write.1.tlog" />
-    <None Include="VST\Release\VSTHost.obj" />
-    <None Include="VST\Release\VSTPlugin.obj" />
-    <None Include="VST\Release\WaveBuffer.obj" />
-    <None Include="VST\Release\WaveOutDevice.obj" />
-    <None Include="VST\Vashti.vcxproj" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Dialogs\" />
-    <Folder Include="VST\notes\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <Content Include="icon1.ico" />
     <Content Include="Resources\Icon1.ico" />
-    <Content Include="VST\Debug\vc100.pdb" />
-    <Content Include="VST\Release\vc100.pdb" />
-    <Content Include="VST\Vashti.cpp" />
-    <Content Include="VST\Vashti.h" />
-    <Content Include="VST\Vashti.vcxproj.filters" />
-    <Content Include="VST\Vashti.vcxproj.user" />
-    <Content Include="VST\VSTHost.cpp" />
-    <Content Include="VST\VSTHost.h" />
-    <Content Include="VST\VSTPlugin.cpp" />
-    <Content Include="VST\VSTPlugin.h" />
-    <Content Include="VST\vstsdk2.4\aeffect.h" />
-    <Content Include="VST\vstsdk2.4\aeffectx.h" />
-    <Content Include="VST\vstsdk2.4\aeffeditor.h" />
-    <Content Include="VST\vstsdk2.4\audioeffect.h" />
-    <Content Include="VST\vstsdk2.4\audioeffectx.h" />
-    <Content Include="VST\WaveBuffer.cpp" />
-    <Content Include="VST\WaveBuffer.h" />
-    <Content Include="VST\WaveOutDevice.cpp" />
-    <Content Include="VST\WaveOutDevice.h" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

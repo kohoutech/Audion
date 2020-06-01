@@ -1,5 +1,5 @@
 ﻿/* ----------------------------------------------------------------------------
-Transonic Patch Library
+Kohoutech Patch Library
 Copyright (C) 1995-2020  George E Greaney
 
 This program is free software; you can redistribute it and/or
@@ -24,7 +24,7 @@ using System.Text;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 
-namespace Transonic.Patch
+namespace Kohoutech.Patch
 {
     public class PatchWire
     {
@@ -42,10 +42,10 @@ namespace Transonic.Patch
 
         bool isSelected;
 
-        public iPatchWire model;
+        public IPatchWire model;
 
         //we only create a new patch wire when we have two panels to connect
-        public PatchWire(PatchPanel srcPanel, PatchPanel destPanel, iPatchWire _model)
+        public PatchWire(IPatchWire _model, PatchPanel srcPanel, PatchPanel destPanel)
         {
             canvas = null;
             model = _model;
@@ -176,7 +176,7 @@ namespace Transonic.Patch
 
     //- model interface -------------------------------------------------------
 
-    public interface iPatchWire
+    public interface IPatchWire
     {
         //disconnect source and dest units in patch
         void disconnect();

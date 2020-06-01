@@ -65,7 +65,7 @@ namespace Audion
             this.Controls.Add(canvas);
 
             patchFilename = null;
-            this.Text = "new patch - Audion";
+            this.Text = "new plugin - Audion";
             hasChanged = false;
         }
 
@@ -104,7 +104,7 @@ namespace Audion
         {
             audion.newPatch();
             patchFilename = null;
-            this.Text = "new patch - Audion";
+            this.Text = "new plugin - Audion";
             hasChanged = false;
         }
 
@@ -147,7 +147,7 @@ namespace Audion
                 String filename = "";
                 savePatchDialog.InitialDirectory = settings.patchFolder;
                 savePatchDialog.DefaultExt = "*.aud";
-                savePatchDialog.Filter = "patch files|*.aud|All files|*.*";
+                savePatchDialog.Filter = "plugin files|*.aud|All files|*.*";
                 DialogResult result = savePatchDialog.ShowDialog();
                 filename = savePatchDialog.FileName;
                 if ((result == DialogResult.Cancel) || (filename.Length == 0)) return;           //user canceled save dialog
@@ -165,7 +165,7 @@ namespace Audion
             hasChanged = false;
             if (renamed)
             {
-                String msg = "Current patch has been saved as\n " + Path.GetFileName(patchFilename);
+                String msg = "Current plugin has been saved as\n " + Path.GetFileName(patchFilename);
                 MessageBox.Show(msg, "Saved");
             }
         }
@@ -195,40 +195,33 @@ namespace Audion
             Application.Exit();
         }
 
-        //- module menu ---------------------------------------------------------------
+        //- module menu -------------------------------------------------------
 
         public void manageModuleMenuItem_Click(object sender, EventArgs e)
         {
-
+            audion.manageModules();
         }
 
-        //handler for all module menu items
-        //private void modSelectMenuItem_Click(object sender, EventArgs e)
-        //{
-        //    ToolStripItem item = (ToolStripItem)sender;
-        //    String modName = (String)item.Tag;                  //get module name from menu item
+        //- plugin menu -------------------------------------------------------
 
+        private void settingsPluginMenuItem_Click(object sender, EventArgs e)
+        {
+            audion.showPluginSettingsDialog();
+        }
 
-        //    Module mod = audion.addModuleToPatch(modName);      //add module to graph
-        //    PatchBox box;
-        //    switch (modName)
-        //    {
-        //        case "Knob" :
-        //            box = new KnobControl(mod);
-        //            break;
-        //        case "List":
-        //            box = new ListSelectControl(mod);
-        //            break;
-        //        default:
-        //            box = new ModuleBox(mod);                 //create new module box from unit
-        //            break;
-        //    }
-        //    canvas.addPatchBox(box);                            //and add it to canvas
-        //}
-
-        //- plugin menu -----------------------------------------------------------------
+        private void buildPluginMenuItem_Click(object sender, EventArgs e)
+        {
+            audion.buildPlugin();
+        }
 
         private void runPluginMenuItem_Click(object sender, EventArgs e)
+        {
+            audion.runPlugin();
+        }
+
+        //- host menu -------------------------------------------------------
+
+        private void settingsHostMenuItem_Click(object sender, EventArgs e)
         {
 
         }
@@ -242,5 +235,23 @@ namespace Audion
                 "http://transonic.kohoutech.com";
             MessageBox.Show(msg, "About");
         }
+
+        //- toolstrip -----------------------------------------------------------------
+        
+        private void newPluginToolButton_Click(object sender, EventArgs e)
+        {
+            newPatch();
+        }
+
+        private void openPluginToolButton_Click(object sender, EventArgs e)
+        {
+            loadPatch();
+        }
+
+        private void savePluginToolButton_Click(object sender, EventArgs e)
+        {
+            savePatch(false);
+        }
+
     }
 }

@@ -25,11 +25,13 @@ using System.Text;
 using System.Drawing;
 
 using Kohoutech.Patch;
+
 using Audion.Breadboard;
+using Audion.Fast;
 
 namespace Audion.UI
 {
-    public class ListSelectControl : Module, IPatchBox
+    public class ListSelectControl : ControlModule, IPatchBox
     {
         public List<String> items;
         public int curitem;
