@@ -1,5 +1,5 @@
 ﻿/* ----------------------------------------------------------------------------
-Transonic Patch Library
+Kohoutech Patch Library
 Copyright (C) 1995-2020  George E Greaney
 
 This program is free software; you can redistribute it and/or
@@ -25,7 +25,7 @@ using System.Windows.Forms;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 
-namespace Transonic.Patch
+namespace Kohoutech.Patch
 {
     public class PatchPalette : Control
     {

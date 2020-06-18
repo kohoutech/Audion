@@ -38,9 +38,13 @@ namespace Audion
     {
         public AudionWindow window;
         public PatchCanvas canvas;
-        public AudionPatch patch;
         public Settings settings;
         public TidepoolE tidepool;
+
+        public AudionPatch patch;
+        public AILObject ailobj;
+        public VSTPlugin plugin;
+
 
         public Dictionary<string, ModuleDef> moduleDefs;
 
@@ -53,7 +57,11 @@ namespace Audion
             canvas = new PatchCanvas(patch);
             patch.canvas = canvas;              //so the model can notify the canvas when it has changed
 
-            loadModuleDefinitions();            
+            loadModuleDefinitions();
+
+            tidepool = new TidepoolE();
+            ailobj = null;
+            plugin = null;
         }
 
         //- module management -------------------------------------------------
@@ -166,8 +174,8 @@ namespace Audion
                 if (!didset) return;
             }
 
-            AILObject ailobj = patch.generateAIL();
-            VSTPlugin plugin = tidepool.buildVST(ailobj);
+            //ailobj = patch.generateAIL();
+            plugin = tidepool.buildVST(patch);
         }
 
         internal void runPlugin()
