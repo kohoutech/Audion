@@ -64,6 +64,16 @@
     <Compile Include="Dialogs\PluginSettings.Designer.cs">
       <DependentUpon>PluginSettings.cs</DependentUpon>
     </Compile>
+    <Compile Include="OBOE\BINARY\BinaryData.cs" />
+    <Compile Include="OBOE\ExportEntry.cs" />
+    <Compile Include="OBOE\ImportEntry.cs" />
+    <Compile Include="OBOE\Oboe.cs" />
+    <Compile Include="OBOE\OboeBlock.cs" />
+    <Compile Include="OBOE\Section.cs" />
+    <Compile Include="OBOE\Win32\CoffResource.cs" />
+    <Compile Include="OBOE\Win32\CoffSection.cs" />
+    <Compile Include="OBOE\Win32\Win32Exe.cs" />
+    <Compile Include="OBOE\Win32\Win32Obj.cs" />
     <Compile Include="Settings.cs" />
     <Compile Include="Tidepool\AIL.cs" />
     <Compile Include="ENAML\EnamlData.cs" />
@@ -96,9 +106,11 @@
     <Compile Include="Patch\PatchWire.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Tidepool\Forge.cs" />
+    <Compile Include="Tidepool\BlackForest.cs" />
+    <Compile Include="Tidepool\Hatchet.cs" />
+    <Compile Include="Tidepool\Jigsaw.cs" />
     <Compile Include="Tidepool\TidepoolE.cs" />
-    <Compile Include="Tidepool\Weld.cs" />
+    <Compile Include="Tidepool\Joiner.cs" />
     <Compile Include="UI\ButtonControl.cs" />
     <Compile Include="UI\KeyboardControl.cs" />
     <Compile Include="UI\KnobControl.cs" />
@@ -114,13 +126,6 @@
     <Compile Include="Widget\Knob.cs">
       <SubType>UserControl</SubType>
     </Compile>
-    <Compile Include="WIN32\ExportTable.cs" />
-    <Compile Include="WIN32\FileIO.cs" />
-    <Compile Include="WIN32\ImportTable.cs" />
-    <Compile Include="WIN32\ResourceTable.cs" />
-    <Compile Include="WIN32\Section.cs" />
-    <Compile Include="WIN32\Win32Exe.cs" />
-    <Compile Include="WIN32\Win32Obj.cs" />
     <EmbeddedResource Include="AudionWindow.resx">
       <DependentUpon>AudionWindow.cs</DependentUpon>
     </EmbeddedResource>

@@ -22,11 +22,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-//If this is Tuesday, it must be Weld...
-
 namespace Audion.Tidepool
 {
-    class Weld
+    public class Jigsaw
     {
     }
 }
