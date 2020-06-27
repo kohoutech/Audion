@@ -34,22 +34,54 @@ using Audion.Breadboard;
 
 namespace Audion.Tidepool
 {
-    public class TidepoolE
+    public class TidepoolD
     {
-        public VSTPlugin buildVST(AudionPatch patch)
+        public VSTPlugin buildPlugin(AudionPatch patch)
         {
             List<String> plugSource = new List<string>();
 
+            plugSource.Add("typedef int BOOL;");
+            plugSource.Add("typedef unsigned int size_t;");
+            plugSource.Add("#define true 1");
+            plugSource.Add("#define false 0");
+            plugSource.Add("#define NULL 0");
+            plugSource.Add("void* art_memcpy(void* dest, const void* src, size_t num);");
+            plugSource.Add("void* art_memset(void* dest, int c, size_t len);");
+            plugSource.Add("int art_strcmp(const char* str1, const char* str2);");
+            plugSource.Add("char * art_strcpy(char* dest, const char* src);");
+            plugSource.Add("size_t art_strlen(const char* str);\n");
+
+            plugSource.Add("typedef struct Protege {");
+            plugSource.Add("float sampleRate;");
+            plugSource.Add("int blockSize;");
+            plugSource.Add("int numPrograms;");
+            plugSource.Add("int numParams;");
+            plugSource.Add("int curProgram;");
+            plugSource.Add("int ID;");
+            plugSource.Add("int version;");
+            plugSource.Add("int numInputs;");
+            plugSource.Add("int numOutputs;");
+            plugSource.Add("int initialDelay;");
+            plugSource.Add("BOOL hasEditor;");
+            plugSource.Add("BOOL canProcessReplacing;");
+            plugSource.Add("BOOL canDoubleReplacing;");
+            plugSource.Add("BOOL programsAreChunks;");
+            plugSource.Add("BOOL isSynth;");
+            plugSource.Add("BOOL noTail; }");
+            plugSource.Add("Protege;\n");
+            plugSource.Add("extern Protege protege;\n");
+            plugSource.Add("#define CCONST(a, b, c, d) ((((int)a) << 24) | (((int)b) << 16) | (((int)c) << 8) | (((int)d) << 0))");
+
             plugSource.Add("void initProtege() {");
-            plugSource.Add("protege.sampleRate = SAMPLERATE;");
-            plugSource.Add("protege.blockSize = BLOCKSIZE;");
-            plugSource.Add("protege.numParams = NPARAMS;");
-            plugSource.Add("protege.numPrograms = NPROGS;");
+            plugSource.Add("protege.sampleRate = 44100.0f;");
+            plugSource.Add("protege.blockSize = 1024;");
+            plugSource.Add("protege.numParams = 0;");
+            plugSource.Add("protege.numPrograms = 1;");
             plugSource.Add("protege.curProgram = 0;");
-            plugSource.Add("protege.ID = PlugID;");
-            plugSource.Add("protege.version = PlugVer;");
-            plugSource.Add("protege.numInputs = NINS;");
-            plugSource.Add("protege.numOutputs = NOUTS;");
+            plugSource.Add("protege.ID = CCONST('A', 'c', 'o', 'l');");
+            plugSource.Add("protege.version = 1000;");
+            plugSource.Add("protege.numInputs = 0;");
+            plugSource.Add("protege.numOutputs = 1;");
             plugSource.Add("protege.hasEditor = false;");
             plugSource.Add("protege.canProcessReplacing = true;");
             plugSource.Add("protege.canDoubleReplacing = false;");
@@ -61,22 +93,22 @@ namespace Audion.Tidepool
             plugSource.Add("}\n");
 
             plugSource.Add("BOOL getEffectName(char* name) {");
-            plugSource.Add("art_strcpy(name, effectName);");
+            plugSource.Add("art_strcpy(name, \"Protege\");");
             plugSource.Add("return true;");
             plugSource.Add("}\n");
 
             plugSource.Add("BOOL getProductString(char* text) {");
-            plugSource.Add("art_strcpy(text, productName);");
+            plugSource.Add("art_strcpy(text, \"Presto Protege\");");
             plugSource.Add("return true;");
             plugSource.Add("}\n");
 
             plugSource.Add("BOOL getVendorString(char* text) {");
-            plugSource.Add("art_strcpy(text, vendorName);");
+            plugSource.Add("art_strcpy(text, \"Presto\");");
             plugSource.Add("return true;");
             plugSource.Add("}\n");
 
             plugSource.Add("int getVendorVersion() {");
-            plugSource.Add("return PlugVer;");
+            plugSource.Add("return 1000;");
             plugSource.Add("}\n");
 
             plugSource.Add("void setSampleRate(float _sampleRate) {");

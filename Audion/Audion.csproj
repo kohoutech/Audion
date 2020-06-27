@@ -109,8 +109,10 @@
     <Compile Include="Tidepool\BlackForest.cs" />
     <Compile Include="Tidepool\Hatchet.cs" />
     <Compile Include="Tidepool\Jigsaw.cs" />
-    <Compile Include="Tidepool\TidepoolE.cs" />
+    <Compile Include="Tidepool\TidepoolD.cs" />
     <Compile Include="Tidepool\Joiner.cs" />
+    <Compile Include="Tidepool\TIDEPOOLE\Scanner.cs" />
+    <Compile Include="Tidepool\TIDEPOOLE\TidepoolE.cs" />
     <Compile Include="UI\ButtonControl.cs" />
     <Compile Include="UI\KeyboardControl.cs" />
     <Compile Include="UI\KnobControl.cs" />
