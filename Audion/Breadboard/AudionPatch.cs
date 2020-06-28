@@ -228,11 +228,12 @@ namespace Audion.Breadboard
         {
             paramList.Clear();
 
-            effectName = "";
-            productName = "";
-            vendorName = "";
-            pluginID = "";
-            pluginVersion = 0;
+            //for debugging
+            effectName = "Test1";
+            productName = "Test1";
+            vendorName = "Audion";
+            pluginID = "test";
+            pluginVersion = 158;
         }
 
         //has the user given the plugin settings values yet?

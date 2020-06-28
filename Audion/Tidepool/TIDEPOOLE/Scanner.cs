@@ -79,7 +79,7 @@ namespace TidepoolModelE
 
             identTbl = new Dictionary<string, TokenSym>();
             identSpellTbl = new Dictionary<int, TokenSym>();
-            tokenIdNum = (int)TokenType.tERROR + 1;
+            tokenIdNum = (int)TokenType.tIDENT;
 
             escapeTbl = new Dictionary<char, char>();
             escapeTbl.Add('a', '\a');
@@ -655,6 +655,12 @@ namespace TidepoolModelE
             }
 
         }
+
+        public void skip(int c)
+        {
+            next();
+        }
+
     }
 
     public enum TokenType
@@ -753,7 +759,9 @@ namespace TidepoolModelE
         tBAREQU,
         tCOMMA,
 
-        tERROR
+        tERROR,
+
+        tIDENT = 1024
     }
 
     public class TokenSym

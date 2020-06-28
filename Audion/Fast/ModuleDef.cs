@@ -23,7 +23,8 @@ using System.Linq;
 using System.Text;
 using System.IO;
 
-using Kohoutech.Win32;
+using Kohoutech.Binary;
+using Kohoutech.OBOE;
 
 namespace Audion.Fast
 {
@@ -56,7 +57,7 @@ namespace Audion.Fast
         //load def obj from xxx.mod file
         public static ModuleDef loadModuleDef(String filename)
         {
-            SourceFile modfile = new SourceFile(filename);
+            BinaryIn modfile = new BinaryIn(filename);
 
             //module header - check sig first
             uint sig = modfile.getFour();

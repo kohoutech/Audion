@@ -39,7 +39,7 @@ namespace Audion
         public AudionWindow window;
         public PatchCanvas canvas;
         public Settings settings;
-        public TidepoolE tidepool;
+        public TidepoolD tidepool;
 
         public AudionPatch patch;
         public AILObject ailobj;
@@ -59,7 +59,7 @@ namespace Audion
 
             loadModuleDefinitions();
 
-            tidepool = new TidepoolE();
+            tidepool = new TidepoolD();
             ailobj = null;
             plugin = null;
         }
@@ -175,7 +175,7 @@ namespace Audion
             }
 
             //ailobj = patch.generateAIL();
-            plugin = tidepool.buildVST(patch);
+            plugin = tidepool.buildPlugin(patch);
         }
 
         internal void runPlugin()
